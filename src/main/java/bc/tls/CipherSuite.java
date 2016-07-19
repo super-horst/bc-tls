@@ -11,7 +11,7 @@ import java.util.Map;
  * Definition of cipher suites taken from
  * {@link org.bouncycastle.crypto.tls.CipherSuite}
  * 
- * @author freddy.curium
+ * @author super-horst
  */
 public enum CipherSuite {
 	TLS_NULL_WITH_NULL_NULL(0x0000),
@@ -394,7 +394,7 @@ public enum CipherSuite {
 			CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
 			CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
 			CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA });
-	
+
 	/**
 	 * Cipher suites for forward secrecy
 	 */
@@ -411,7 +411,7 @@ public enum CipherSuite {
 			CipherSuite.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
 			CipherSuite.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
 			CipherSuite.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256});
+			CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 });
 
 	/**
 	 * OpenSSL cipher group HIGH
@@ -433,7 +433,7 @@ public enum CipherSuite {
 			CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 			CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 			CipherSuite.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
-			
+
 			CipherSuite.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
 			CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
 			CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
@@ -470,7 +470,7 @@ public enum CipherSuite {
 			CipherSuite.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
 
 			CipherSuite.TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA,
-			
+
 			CipherSuite.TLS_DH_anon_WITH_AES_256_GCM_SHA384,
 			CipherSuite.TLS_DH_anon_WITH_AES_256_CBC_SHA256,
 			CipherSuite.TLS_DH_anon_WITH_AES_256_CBC_SHA,
@@ -480,7 +480,7 @@ public enum CipherSuite {
 			CipherSuite.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
 			CipherSuite.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA,
 			CipherSuite.TLS_DH_anon_WITH_DES_CBC_SHA,
-			
+
 			CipherSuite.TLS_RSA_WITH_AES_256_GCM_SHA384,
 			CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256,
 			CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
@@ -489,7 +489,7 @@ public enum CipherSuite {
 			CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
 			CipherSuite.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,
 			CipherSuite.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA,
-			
+
 			CipherSuite.TLS_PSK_WITH_AES_256_CBC_SHA,
 			CipherSuite.TLS_PSK_WITH_AES_128_CBC_SHA,
 			CipherSuite.TLS_PSK_WITH_3DES_EDE_CBC_SHA,
@@ -499,9 +499,9 @@ public enum CipherSuite {
 			CipherSuite.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA,
 			CipherSuite.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA,
 			CipherSuite.TLS_SRP_SHA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_WITH_AES_128_CBC_SHA ,
+			CipherSuite.TLS_SRP_SHA_WITH_AES_128_CBC_SHA,
 			CipherSuite.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA});
+			CipherSuite.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA });
 
 	/**
 	 * OpenSSL cipher group MEDIUM
@@ -561,7 +561,7 @@ public enum CipherSuite {
 	}
 
 	/**
-	 * Converts a CipherSuite[] to a String[]
+	 * Converts a {@code CipherSuite[]} to a {@code String[]}
 	 * 
 	 * @param cipherSuites
 	 *            the cipher suites
@@ -576,7 +576,7 @@ public enum CipherSuite {
 	}
 
 	/**
-	 * Converts a int[] to a String[]
+	 * Converts a {@code int[]} to a {@code String[]}
 	 * 
 	 * @param suites
 	 *            the cipher suites
@@ -593,7 +593,7 @@ public enum CipherSuite {
 	}
 
 	/**
-	 * Converts a String[] to a int[]
+	 * Converts a {@code String[]} to a {@code int[]}
 	 * 
 	 * @param suites
 	 *            the cipher suites
