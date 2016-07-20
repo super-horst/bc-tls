@@ -300,12 +300,6 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		tlsSocket.setEnabledCipherSuites(getDefaultCipherSuites());
 		tlsSocket.setSupportedCipherSuites(getSupportedCipherSuites());
 
-		// TODO move to server socket factory
-		// if (clientAuthMode == ClientAuthMode.NEEDS) {
-		// tlsSocket.setNeedClientAuth(true);
-		// } else {
-		// tlsSocket.setWantClientAuth(clientAuthMode == ClientAuthMode.WANTS);
-		// }
 
 		return tlsSocket;
 	}

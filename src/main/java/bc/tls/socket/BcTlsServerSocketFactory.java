@@ -22,24 +22,50 @@ package bc.tls.socket;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLServerSocketFactory;
 
+import bc.tls.CipherSuite;
+
 public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements SocketFactoryManager {
 
+	/**
+	 * Thread safe map to hold configuration
+	 */
+	private volatile Map<String, Object> config = new ConcurrentHashMap<String, Object>();
 
-	@Override
-	public void setConfigProperty(String key, Object value) {
-		// TODO Auto-generated method stub
-		
+	/**
+	 * Default constructor
+	 */
+	public BcTlsServerSocketFactory() {
+		reset();
+	}
+
+	/**
+	 * Reset to default configuration.
+	 */
+	protected void reset() {
+		Long timeout = Long.valueOf(TimeUnit.SECONDS.toMillis(DEFAULT_TIMEOUT));
+		setConfigProperty(KEY_TIMEOUT, timeout.intValue());
+
+		setConfigProperty(KEY_DEFAULT_CIPHER_SUITES, CipherSuite.DEFAULT);
+		setConfigProperty(KEY_SOCKET_AUTO_CLOSE, Boolean.TRUE);
+		setConfigProperty(KEY_DEFAULT_AUTHENTICATION, new BcTlsAuthentication());
 	}
 
 	@Override
-	public Object getConfigProperty(String key) {
-		// TODO Auto-generated method stub
-		return null;
+	public void setConfigProperty(final String key, final Object value) {
+		config.put(key, value);
 	}
-	
+
+	@Override
+	public Object getConfigProperty(final String key) {
+		return config.get(key);
+	}
+
 	@Override
 	public String[] getDefaultCipherSuites() {
 		// TODO Auto-generated method stub
@@ -53,21 +79,32 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	}
 
 	@Override
-	public ServerSocket createServerSocket(int port) throws IOException {
+	public BcTlsServerSocket createServerSocket(int port) throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ServerSocket createServerSocket(int port, int backlog) throws IOException {
+	public BcTlsServerSocket createServerSocket(int port, int backlog) throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ServerSocket createServerSocket(int port, int backlog, InetAddress ifAddress) throws IOException {
+	public BcTlsServerSocket createServerSocket(int port, int backlog, InetAddress ifAddress) throws IOException {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	private BcTlsServerSocket createSocket() throws IOException {
+		return new BcTlsServerSocket(0);
+
+		// if (clientAuthMode == ClientAuthMode.NEEDS) {
+		// tlsSocket.setNeedClientAuth(true);
+		// } else {
+		// tlsSocket.setWantClientAuth(clientAuthMode == ClientAuthMode.WANTS);
+		// }
+
 	}
 
 }
