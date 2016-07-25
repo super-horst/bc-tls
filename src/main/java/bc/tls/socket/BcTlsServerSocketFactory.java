@@ -21,26 +21,37 @@ package bc.tls.socket;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocketFactory;
 
 import bc.tls.CipherSuite;
 
+/**
+ * BC tls server socket factory
+ * 
+ * @author super-horst
+ *
+ */
 public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements SocketFactoryManager {
 
 	/**
-	 * Thread safe map to hold configuration
+	 * Thread safe map to hold configuration TODO why thread safe?
 	 */
 	private volatile Map<String, Object> config = new ConcurrentHashMap<String, Object>();
+	private Long defaultTimeout;
+	private String[] defaultCipherSuites;
+	private String[] supportedCipherSuites;
 
 	/**
 	 * Default constructor
 	 */
-	public BcTlsServerSocketFactory() {
+	public BcTlsServerSocketFactory(SSLParameters defaults) {
+		setDefaultCipherSuites(defaults.getCipherSuites());
+
 		reset();
 	}
 
@@ -48,12 +59,12 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	 * Reset to default configuration.
 	 */
 	protected void reset() {
-		Long timeout = Long.valueOf(TimeUnit.SECONDS.toMillis(DEFAULT_TIMEOUT));
-		setConfigProperty(KEY_TIMEOUT, timeout.intValue());
+		// TODO is this a reasonable selection?
+		setSupportedCipherSuites(CipherSuite.DEFAULT);
 
-		setConfigProperty(KEY_DEFAULT_CIPHER_SUITES, CipherSuite.DEFAULT);
+		setDefaultTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+
 		setConfigProperty(KEY_SOCKET_AUTO_CLOSE, Boolean.TRUE);
-		setConfigProperty(KEY_DEFAULT_AUTHENTICATION, new BcTlsAuthentication());
 	}
 
 	@Override
@@ -67,37 +78,60 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	}
 
 	@Override
+	public Long getDefaultTimeout() {
+		return defaultTimeout;
+	}
+
+	@Override
+	public void setDefaultTimeout(Long timeout, TimeUnit unit) {
+		this.defaultTimeout = unit.toMillis(timeout);
+	}
+
+	@Override
+	public void setDefaultCipherSuites(String[] suites) {
+		this.defaultCipherSuites = suites.clone();
+	}
+
+	@Override
 	public String[] getDefaultCipherSuites() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.defaultCipherSuites;
+	}
+
+	/**
+	 * Set the supported cipher suites
+	 * 
+	 * @param suites
+	 *            cipher suites to set
+	 */
+	@Override
+	public void setSupportedCipherSuites(String[] suites) {
+		this.supportedCipherSuites = suites.clone();
 	}
 
 	@Override
 	public String[] getSupportedCipherSuites() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.supportedCipherSuites;
 	}
 
 	@Override
 	public BcTlsServerSocket createServerSocket(int port) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		return createSocket(port, null, null);
 	}
 
 	@Override
 	public BcTlsServerSocket createServerSocket(int port, int backlog) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		return createSocket(port, backlog, null);
 	}
 
 	@Override
 	public BcTlsServerSocket createServerSocket(int port, int backlog, InetAddress ifAddress) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		return createSocket(port, backlog, ifAddress);
 	}
 
-	private BcTlsServerSocket createSocket() throws IOException {
+	private BcTlsServerSocket createSocket(Integer port, Integer backlog, InetAddress ifAddress) throws IOException {
 		return new BcTlsServerSocket(0);
+		
+		// TODO implement! :)
 
 		// if (clientAuthMode == ClientAuthMode.NEEDS) {
 		// tlsSocket.setNeedClientAuth(true);

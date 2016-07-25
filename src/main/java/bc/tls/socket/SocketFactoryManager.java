@@ -19,54 +19,41 @@
  */
 package bc.tls.socket;
 
-import org.bouncycastle.crypto.tls.TlsAuthentication;
-import org.bouncycastle.crypto.tls.TlsCredentials;
+import java.util.concurrent.TimeUnit;
 
-import bc.tls.CipherSuite;
-
+/**
+ * Manager interface with some methods to configure socket factories.
+ * 
+ * Keys for the {@code ConfigProperty} methods are located here.
+ * 
+ * @author super-horst
+ *
+ */
 public interface SocketFactoryManager {
-	/**
-	 * Config property key for socket timeout
-	 * <p>
-	 * Accepts: {@link Integer}
-	 */
-	public static final String KEY_TIMEOUT = "bc.tls.socket.timeout";
 	/**
 	 * Default timeout in seconds
 	 */
-	public static final Integer DEFAULT_TIMEOUT = 10;
+	public static final Long DEFAULT_TIMEOUT = 10L;
 	/**
-	 * Config property key for default cipher suites
-	 * <p>
-	 * Accepts: {@link String[]} and {@link CipherSuite}[]
-	 */
-	public static final String KEY_DEFAULT_CIPHER_SUITES = "bc.tls.ciphers.default";
-	/**
-	 * Config property key for supported cipher suites
-	 * <p>
-	 * Accepts: {@link String[]} and {@link CipherSuite}[]
-	 */
-	public static final String KEY_SUPPORTED_CIPHER_SUITES = "bc.tls.ciphers.supported";
-	/**
-	 * Config property key to close the underlying socket when this socket is
+	 * Config property key to close the underlying socket when the tls socket is
 	 * closed
 	 * <p>
 	 * Accepts: {@link Boolean}
 	 */
 	public static final String KEY_SOCKET_AUTO_CLOSE = "bc.tls.socket.autoClose";
 	/**
-	 * Config property key for the default tls authentication object
+	 * Config property key for an optional random provider
 	 * <p>
-	 * Accepts: {@link TlsAuthentication}
+	 * Accepts: {@link String} and {@link Provider}
 	 */
-	public static final String KEY_DEFAULT_AUTHENTICATION = "bc.tls.authentication.default";
+	public static final String KEY_RANDOM_PROVIDER = "bc.tls.random.provider";
 	/**
-	 * Config property key for the default tls credentials
+	 * Config property key for an optional random algorithm
 	 * <p>
-	 * Accepts: {@link TlsCredentials}
+	 * Accepts: {@link String}
 	 */
-	public static final String KEY_DEFAULT_CREDENTIALS = "bc.tls.credentials.default";
-	
+	public static final String KEY_RANDOM_ALGORITHM = "bc.tls.random.algorithm";
+
 	/**
 	 * Set a configuration property.
 	 * 
@@ -86,4 +73,35 @@ public interface SocketFactoryManager {
 	 *         if there is no such property
 	 */
 	Object getConfigProperty(final String key);
+
+	/**
+	 * Set this factories default timeout
+	 * 
+	 * @param timeout
+	 *            the timeout value
+	 * @param unit
+	 *            given values unit
+	 */
+	void setDefaultTimeout(Long timeout, TimeUnit unit);
+
+	/**
+	 * @return this factory's default timeout (in milliseconds)
+	 */
+	Long getDefaultTimeout();
+
+	/**
+	 * Set the default cipher suites
+	 * 
+	 * @param suites
+	 *            cipher suites to set
+	 */
+	void setDefaultCipherSuites(String[] suites);
+
+	/**
+	 * Set the supported cipher suites
+	 * 
+	 * @param suites
+	 *            cipher suites to set
+	 */
+	void setSupportedCipherSuites(String[] suites);
 }

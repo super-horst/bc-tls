@@ -2,33 +2,32 @@ package bc.tls.socket;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSocketFactory;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import bc.tls.CipherSuite;
+
 public class BcTlsSocketFactoryTest {
 
 	private static final Integer TEST_PORT = 12345;
 
 	ServerSocket serverSocket;
-
-	private BcTlsSocketFactory createFactory() {
-		return new BcTlsSocketFactory();
-	}
+	SSLParameters params;
 
 	private void checkRawSocket(BcTlsSocket socket) {
 		try {
-			Field f = socket.getClass().getDeclaredField("socket");
+			Field f = getField(socket.getClass(), "socket");
 			f.setAccessible(true);
 			Socket rawSocket = (Socket) f.get(socket);
 			Assert.assertFalse(rawSocket instanceof BcTlsSocket);
@@ -39,9 +38,24 @@ public class BcTlsSocketFactoryTest {
 		}
 	}
 
+	@SuppressWarnings("rawtypes")
+	private static Field getField(Class clazz, String fieldName) throws NoSuchFieldException {
+		try {
+			return clazz.getDeclaredField(fieldName);
+		} catch (NoSuchFieldException e) {
+			Class superClass = clazz.getSuperclass();
+			if (superClass == null) {
+				throw e;
+			} else {
+				return getField(superClass, fieldName);
+			}
+		}
+	}
+
 	@Before
 	public void prepare() throws IOException {
 		this.serverSocket = new ServerSocket(TEST_PORT);
+		this.params = new SSLParameters(CipherSuite.DEFAULT);
 	}
 
 	@After
@@ -52,17 +66,17 @@ public class BcTlsSocketFactoryTest {
 	@Test
 	public void defaultRegistrationTest() {
 		BcTlsSocketFactory.setDefault();
-		SocketFactory sockFac = BcTlsSocketFactory.getDefault();
+		SocketFactory sockFac = SSLSocketFactory.getDefault();
 		Assert.assertTrue(sockFac instanceof BcTlsSocketFactory);
 		Assert.assertSame(sockFac, BcTlsSocketFactory.getDefault());
 	}
 
 	@Test
 	public void defaultCipherSuitsTest() {
-		BcTlsSocketFactory sockFac = new BcTlsSocketFactory();
+		BcTlsSocketFactory sockFac = new BcTlsSocketFactory(this.params);
 		String[] cipherSuites = new String[] { "TLS_ECDHE_ECDSA_WITH_AES_256_SHA" };
 
-		sockFac.setConfigProperty(BcTlsSocketFactory.KEY_DEFAULT_CIPHER_SUITES, cipherSuites);
+		sockFac.setDefaultCipherSuites(cipherSuites);
 		String[] factoryCiphers = sockFac.getDefaultCipherSuites();
 
 		Assert.assertArrayEquals(cipherSuites, factoryCiphers);
@@ -70,10 +84,10 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void supportedCipherSuitsTest() {
-		BcTlsSocketFactory sockFac = new BcTlsSocketFactory();
+		BcTlsSocketFactory sockFac = new BcTlsSocketFactory(this.params);
 		String[] cipherSuites = new String[] { "TLS_ECDHE_ECDSA_WITH_AES_256_SHA" };
 
-		sockFac.setConfigProperty(BcTlsSocketFactory.KEY_SUPPORTED_CIPHER_SUITES, cipherSuites);
+		sockFac.setSupportedCipherSuites(cipherSuites);
 		String[] factoryCiphers = sockFac.getSupportedCipherSuites();
 
 		Assert.assertArrayEquals(cipherSuites, factoryCiphers);
@@ -81,7 +95,7 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void simpleSocketCreationTest() throws UnknownHostException, IOException {
-		SocketFactory sockFac = createFactory();
+		SocketFactory sockFac =  new BcTlsSocketFactory(this.params);
 
 		try (Socket socket = sockFac.createSocket("localhost", TEST_PORT)) {
 			Assert.assertTrue(socket instanceof BcTlsSocket);
@@ -91,7 +105,7 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void locallyBoundSocketCreationTest() throws UnknownHostException, IOException {
-		SocketFactory sockFac = createFactory();
+		SocketFactory sockFac =  new BcTlsSocketFactory(this.params);
 		InetAddress addr = InetAddress.getByName("127.0.0.1");
 
 		try (Socket socket = sockFac.createSocket("localhost", TEST_PORT, addr, 0)) {

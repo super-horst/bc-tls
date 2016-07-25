@@ -25,24 +25,27 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.AccessController;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
+import java.security.Provider;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocketFactory;
 
 import org.bouncycastle.crypto.tls.TlsAuthentication;
 import bc.tls.CipherSuite;
 
 /**
- * Configurable BC tls socket factory.
+ * BC tls socket factory, allows for per-connection authentication
  * 
  * @author super-horst
  *
@@ -51,13 +54,22 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 
 	/**
 	 * Thread safe map to hold configuration
+	 * TODO why thread safe?
 	 */
 	private volatile Map<String, Object> config = new ConcurrentHashMap<String, Object>();
 
+	private String[] defaultCipherSuites;
+
+	private String[] supportedCipherSuites;
+
+	private boolean clientMode = true;
+
+	private TlsAuthentication defaultAuth;
+
 	/**
-	 * Client authentication credentials
+	 * The default socket timeout in milliseconds
 	 */
-	private volatile Map<SocketAddress, CredentialContainer> credentials = new ConcurrentHashMap<SocketAddress, CredentialContainer>();
+	private Long defaultTimeout;
 
 	/**
 	 * Set {@link BcTlsSocketFactory} as default ssl socket provider.
@@ -66,8 +78,7 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	 *             if the provider could not be set
 	 */
 	public static synchronized void setDefault() throws IllegalStateException {
-		if (!setSecurityProperty("ssl.SocketFactory.provider",
-				BcTlsSocketFactory.class.getCanonicalName())) {
+		if (!setSecurityProperty("ssl.SocketFactory.provider", BcTlsSocketFactory.class.getCanonicalName())) {
 			throw new IllegalStateException("Unable to set security property for socket factory");
 		}
 	}
@@ -95,7 +106,9 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	/**
 	 * Default constructor
 	 */
-	public BcTlsSocketFactory() {
+	public BcTlsSocketFactory(SSLParameters defaults) {
+		setDefaultCipherSuites(defaults.getCipherSuites());
+
 		reset();
 	}
 
@@ -103,150 +116,231 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	 * Reset to default configuration.
 	 */
 	protected void reset() {
-		Long timeout = Long.valueOf(TimeUnit.SECONDS.toMillis(DEFAULT_TIMEOUT));
-		setConfigProperty(KEY_TIMEOUT, timeout.intValue());
+		// TODO is this a reasonable selection?
+		setSupportedCipherSuites(CipherSuite.DEFAULT);
+		
+		setDefaultAuthentication(new BcTlsAuthentication());
+		setDefaultTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS);
 
-		setConfigProperty(KEY_DEFAULT_CIPHER_SUITES, CipherSuite.DEFAULT);
 		setConfigProperty(KEY_SOCKET_AUTO_CLOSE, Boolean.TRUE);
-		setConfigProperty(KEY_DEFAULT_AUTHENTICATION, new BcTlsAuthentication());
 	}
 
 	@Override
 	public void setConfigProperty(final String key, final Object value) {
-		config.put(key, value);
+		this.config.put(key, value);
 	}
 
 	@Override
 	public Object getConfigProperty(final String key) {
-		return config.get(key);
+		return this.config.get(key);
 	}
 
 	/**
-	 * @see #registerCredentials(InetSocketAddress, SecureRandom,
-	 *      TlsAuthentication)
-	 * 
-	 * @param host
-	 *            remote host
-	 * @param port
-	 *            remote port number
-	 * @param random
-	 *            random to use
-	 * @param authentication
-	 *            authentication to use
+	 * @return this factory's default authentication
 	 */
-	public void registerCredentials(String host, int port, SecureRandom random, TlsAuthentication authentication) {
-		registerCredentials(new InetSocketAddress(host, port), random, authentication);
+	public TlsAuthentication getDefaultAuthentication() {
+		return this.defaultAuth;
 	}
 
 	/**
-	 * Registers a {@link SecureRandom} and {@link TlsAuthentication} object for
-	 * this address.
-	 * <p>
-	 * Allows for registration of unique security parameters for different
-	 * remote hosts. This might be useful in a case where multiple tls client
-	 * connections requiring separate authentication.
-	 * 
-	 * @param address
-	 *            remote socket address
-	 * @param random
-	 *            random to use
-	 * @param authentication
-	 *            authentication to use
+	 * @param defaultAuth
+	 *            this factory's new default authentication
 	 */
-	public void registerCredentials(SocketAddress address, SecureRandom random, TlsAuthentication authentication) {
-		credentials.put(address, new CredentialContainer(random, authentication));
+	public void setDefaultAuthentication(TlsAuthentication defaultAuth) {
+		this.defaultAuth = defaultAuth;
+	}
+
+	@Override
+	public Long getDefaultTimeout() {
+		return defaultTimeout;
+	}
+
+	@Override
+	public void setDefaultTimeout(Long timeout, TimeUnit unit) {
+		this.defaultTimeout = unit.toMillis(timeout);
+	}
+
+	/**
+	 * Set the default cipher suites
+	 * 
+	 * @param suites
+	 *            cipher suites to set
+	 */
+	@Override
+	public void setDefaultCipherSuites(String[] suites) {
+		this.defaultCipherSuites = suites.clone();
 	}
 
 	@Override
 	public String[] getDefaultCipherSuites() {
-		Object property = getConfigProperty(KEY_DEFAULT_CIPHER_SUITES);
-		if (property instanceof String[]) {
-			return (String[]) property;
-		}
-		if (property instanceof CipherSuite[]) {
-			return CipherSuite.convert((CipherSuite[]) property);
-		}
-		return new String[0];
+		return this.defaultCipherSuites;
+	}
+
+	@Override
+	public void setSupportedCipherSuites(String[] suites) {
+		this.supportedCipherSuites = suites.clone();
 	}
 
 	@Override
 	public String[] getSupportedCipherSuites() {
-		Object property = getConfigProperty(KEY_SUPPORTED_CIPHER_SUITES);
-		if (property instanceof String[]) {
-			return (String[]) property;
-		}
-		if (property instanceof CipherSuite[]) {
-			return CipherSuite.convert((CipherSuite[]) property);
-		}
-		return new String[0];
+		return this.supportedCipherSuites;
+	}
+
+	/**
+	 * @return whether or not this factory produces client sockets
+	 */
+	public boolean isClientFactory() {
+		return this.clientMode;
+	}
+
+	/**
+	 * DEFAULTS to {@code true}
+	 * 
+	 * @param clientMode
+	 *            if this factory is supposed to produce client sockets
+	 */
+	public void setClientFactory(boolean clientMode) {
+		this.clientMode = clientMode;
 	}
 
 	@Override
 	public BcTlsSocket createSocket(InetAddress host, int port) throws IOException {
-		return createSocket(host, port, null, 0);
+		return createSocket(null, new InetSocketAddress(host, port), null, null);
 	}
 
 	@Override
 	public BcTlsSocket createSocket(InetAddress host, int port, InetAddress localAddress, int localPort)
 			throws IOException {
-		String hostname = host.getHostName();
-		if (hostname != null) {
-			Socket socket = createRawSocket(hostname, port, new InetSocketAddress(localAddress, localPort));
-			return createSocket(socket, hostname, port);
-		}
-
-		hostname = host.getCanonicalHostName();
-		if (hostname != null) {
-			Socket socket = createRawSocket(hostname, port, new InetSocketAddress(localAddress, localPort));
-			return createSocket(socket, hostname, port);
-		}
-
-		hostname = host.getHostAddress();
-		if (hostname != null) {
-			Socket socket = createRawSocket(hostname, port, new InetSocketAddress(localAddress, localPort));
-			return createSocket(socket, hostname, port);
-		}
-		throw new IOException("Unable to resolve hostname " + host.toString());
+		return createSocket(null, new InetSocketAddress(host, port), new InetSocketAddress(localAddress, localPort),
+				null);
 	}
 
 	@Override
 	public BcTlsSocket createSocket(String host, int port, InetAddress localHost, int localPort)
 			throws IOException, UnknownHostException {
-		Socket socket = createRawSocket(host, port, new InetSocketAddress(localHost, localPort));
-		return createSocket(socket, host, port);
+		return createSocket(null, new InetSocketAddress(host, port), new InetSocketAddress(localHost, localPort), null);
 	}
 
 	@Override
 	public BcTlsSocket createSocket(String host, int port) throws IOException, UnknownHostException {
-		return createSocket(null, host, port);
-	}
-
-	private BcTlsSocket createSocket(Socket socket, String host, int port) throws IOException {
-		Boolean autoClose = (Boolean) getConfigProperty(KEY_SOCKET_AUTO_CLOSE);
-		return createSocket(socket, host, port, autoClose.booleanValue());
+		return createSocket(null, new InetSocketAddress(host, port), null, null);
 	}
 
 	@Override
 	public BcTlsSocket createSocket(Socket s, String host, int port, boolean autoClose) throws IOException {
-		if (s == null) {
-			return buildSslSocket(createRawSocket(host, port, null), autoClose);
-		}
-
-		if (!s.isBound()) {
-			s.bind(null);
-		}
-
-		if (!s.isConnected()) {
-			s.connect(new InetSocketAddress(host, port), (Integer) getConfigProperty(KEY_TIMEOUT));
-		}
-
-		return buildSslSocket(s, autoClose);
+		return createSocket(s, new InetSocketAddress(host, port), null, autoClose, null);
 	}
 
-	private Socket createRawSocket(final String host, final int port, InetSocketAddress localAddress)
+	public BcTlsSocket createSocket(InetAddress host, int port, TlsAuthentication auth) throws IOException {
+		return createSocket(null, new InetSocketAddress(host, port), null, auth);
+	}
+
+	public BcTlsSocket createSocket(InetAddress host, int port, InetAddress localAddress, int localPort,
+			TlsAuthentication auth) throws IOException {
+		return createSocket(null, new InetSocketAddress(host, port), new InetSocketAddress(localAddress, localPort),
+				auth);
+	}
+
+	public BcTlsSocket createSocket(String host, int port, InetAddress localHost, int localPort, TlsAuthentication auth)
+			throws IOException, UnknownHostException {
+		return createSocket(null, new InetSocketAddress(host, port), new InetSocketAddress(localHost, localPort), auth);
+	}
+
+	public BcTlsSocket createSocket(String host, int port, TlsAuthentication auth)
+			throws IOException, UnknownHostException {
+		return createSocket(null, new InetSocketAddress(host, port), null, auth);
+	}
+
+	private BcTlsSocket createSocket(final Socket socket, final InetSocketAddress remoteAddress,
+			final InetSocketAddress localAddress, TlsAuthentication auth) throws IOException {
+
+		return createSocket(socket, remoteAddress, localAddress, (Boolean) getConfigProperty(KEY_SOCKET_AUTO_CLOSE),
+				auth);
+	}
+
+	public BcTlsSocket createSocket(Socket s, String host, int port, boolean autoClose, TlsAuthentication auth)
+			throws IOException {
+		return createSocket(s, new InetSocketAddress(host, port), null, autoClose, auth);
+	}
+
+	/**
+	 * Final factory method
+	 * 
+	 * @param socket
+	 *            the raw socket, if already one exists
+	 * @param remoteAddress
+	 *            address to connect to
+	 * @param localAddress
+	 *            local address to bind to
+	 * @param autoClose
+	 *            auto close underlying socket, if tls socket closes
+	 * @param auth
+	 *            authentication override, defaults to {@code defaultAuth}
+	 * @return
+	 * @throws IOException
+	 */
+	private BcTlsSocket createSocket(Socket rawSocket, final InetSocketAddress remoteAddress,
+			final InetSocketAddress localAddress, boolean autoClose, TlsAuthentication auth) throws IOException {
+
+		TlsAuthentication authentication = auth == null ? this.defaultAuth : auth;
+
+		if (rawSocket == null) {
+			rawSocket = createRawSocket(remoteAddress, localAddress);
+		}
+
+		if (!rawSocket.isBound()) {
+			rawSocket.bind(null);
+		}
+
+		if (!rawSocket.isConnected()) {
+			rawSocket.connect(remoteAddress, this.defaultTimeout.intValue());
+		}
+
+		SecureRandom random;
+		try {
+			random = getRandom();
+		} catch (NoSuchAlgorithmException e) {
+			throw new IOException("Unable to select source of randomness", e);
+		}
+
+		BcTlsSocket tlsSocket = new BcTlsSocket(rawSocket, autoClose, random, authentication);
+
+		tlsSocket.setUseClientMode(this.clientMode);
+		tlsSocket.setEnabledCipherSuites(getDefaultCipherSuites());
+		tlsSocket.setSupportedCipherSuites(getSupportedCipherSuites());
+
+		return tlsSocket;
+
+	}
+
+	private SecureRandom getRandom() throws NoSuchAlgorithmException {
+		Object algo = getConfigProperty(KEY_RANDOM_ALGORITHM);
+		if (algo == null || !(algo instanceof String)) {
+			return new SecureRandom();
+		}
+		String algorithm = (String) algo;
+
+		Object prov = getConfigProperty(KEY_RANDOM_PROVIDER);
+		if (prov == null) {
+			return SecureRandom.getInstance(algorithm);
+		}
+
+		Provider provider;
+		if (prov instanceof String) {
+			provider = Security.getProvider((String) prov);
+		} else if (prov instanceof Provider) {
+			provider = (Provider) prov;
+		} else {
+			return SecureRandom.getInstance(algorithm);
+		}
+
+		return SecureRandom.getInstance(algorithm, provider);
+	}
+
+	private Socket createRawSocket(final InetSocketAddress remoteAddress, final InetSocketAddress localAddress)
 			throws IOException {
 		Socket s = null;
-		URI uri = URI.create(String.format("socket://" + host + ":%d", port));
+		URI uri = URI.create(String.format("socket://" + remoteAddress.getHostName() + ":%d", remoteAddress.getPort()));
 		ProxySelector ps = ProxySelector.getDefault();
 		Iterator<Proxy> proxies = ps.select(uri).iterator();
 
@@ -255,8 +349,7 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 			try {
 				s = new Socket(proxy);
 				s.bind(localAddress);
-				s.connect(new InetSocketAddress(uri.getHost(), uri.getPort()),
-						(Integer) getConfigProperty(KEY_TIMEOUT));
+				s.connect(remoteAddress, this.defaultTimeout.intValue());
 				break;
 			} catch (IOException ioe) {
 				if (s != null) {
@@ -269,56 +362,11 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 				ps.connectFailed(uri, proxy.address(), ioe);
 
 				if (!proxies.hasNext()) {
-					throw new IOException("Unable to connect to " + uri, ioe);
+					throw new IOException("Unable to connect to through proxy" + uri, ioe);
 				}
 			}
 		}
 		return s;
-	}
-
-	private BcTlsSocket buildSslSocket(Socket rawSocket, boolean autoClose) {
-		InetSocketAddress addr = new InetSocketAddress(rawSocket.getInetAddress(), rawSocket.getPort());
-		CredentialContainer container = credentials.get(addr);
-
-		SecureRandom random = null;
-		TlsAuthentication auth = null;
-		if (container != null) {
-			random = container.random;
-			auth = container.authentication;
-		}
-
-		if (random == null) {
-			random = new SecureRandom();
-		}
-		if (auth == null) {
-			auth = (TlsAuthentication) BcTlsSocketFactory.this.getConfigProperty(KEY_DEFAULT_AUTHENTICATION);
-		}
-
-		BcTlsSocket tlsSocket = new BcTlsSocket(rawSocket, autoClose, random, auth);
-
-		tlsSocket.setUseClientMode(true);
-		tlsSocket.setEnabledCipherSuites(getDefaultCipherSuites());
-		tlsSocket.setSupportedCipherSuites(getSupportedCipherSuites());
-
-
-		return tlsSocket;
-	}
-
-	/**
-	 * Struct to keep random and authentication object together
-	 * 
-	 * @author super-horst
-	 *
-	 */
-	private final class CredentialContainer {
-
-		private final SecureRandom random;
-		private final TlsAuthentication authentication;
-
-		public CredentialContainer(SecureRandom random, TlsAuthentication authentication) {
-			this.random = random;
-			this.authentication = authentication;
-		}
 	}
 
 }

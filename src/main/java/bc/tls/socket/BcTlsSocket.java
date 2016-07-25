@@ -32,8 +32,11 @@ import javax.net.ssl.SSLSession;
 import org.bouncycastle.crypto.tls.TlsAuthentication;
 import org.bouncycastle.crypto.tls.TlsClient;
 import org.bouncycastle.crypto.tls.TlsClientProtocol;
+import org.bouncycastle.crypto.tls.TlsCredentials;
 import org.bouncycastle.crypto.tls.TlsPeer;
 import org.bouncycastle.crypto.tls.TlsProtocol;
+import org.bouncycastle.crypto.tls.TlsServer;
+import org.bouncycastle.crypto.tls.TlsServerProtocol;
 
 /**
  * BC Socket implementation
@@ -43,6 +46,10 @@ import org.bouncycastle.crypto.tls.TlsProtocol;
 public class BcTlsSocket extends AbstractBcTlsSocket {
 
 	private boolean isConnected = false;
+
+	private boolean clientMode;
+	private ClientAuthMode clientAuthMode;
+
 	private boolean enableSessionCreation = true;
 
 	private final Set<HandshakeCompletedListener> handshakeListener = new HashSet<HandshakeCompletedListener>();
@@ -59,6 +66,7 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 
 	private final SecureRandom secureRandom;
 	private final TlsAuthentication tlsAuth;
+	private final TlsCredentials tlsCred;
 
 	/**
 	 * 
@@ -75,6 +83,25 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 		super(s, autoClose);
 		this.secureRandom = random;
 		this.tlsAuth = authentication;
+		this.tlsCred = null;
+	}
+
+	/**
+	 * 
+	 * @param s
+	 *            the underlying network socket
+	 * @param autoClose
+	 *            close the underlying socket automatically
+	 * @param random
+	 *            a {@link SecureRandom} implementation
+	 * @param credentials
+	 *            tls credentials
+	 */
+	BcTlsSocket(Socket s, boolean autoClose, SecureRandom random, TlsCredentials credentials) {
+		super(s, autoClose);
+		this.secureRandom = random;
+		this.tlsAuth = null;
+		this.tlsCred = credentials;
 	}
 
 	@Override
@@ -94,26 +121,37 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 	}
 
 	public void setSupportedCipherSuites(String[] suites) {
-		this.supportedCipherSuites = suites.clone();
+		if (suites == null) {
+			this.supportedCipherSuites = new String[0];
+		} else {
+			this.supportedCipherSuites = suites.clone();
+		}
 	}
 
 	@Override
 	public String[] getSupportedCipherSuites() {
-		return this.supportedCipherSuites.clone();
+		return supportedCipherSuites.clone();
+	}
+
+	public void setEnabledCipherSuites(String[] suites) {
+		if (suites == null) {
+			this.enabledCipherSuites = new String[0];
+		} else {
+			this.enabledCipherSuites = suites.clone();
+		}
 	}
 
 	@Override
 	public String[] getEnabledCipherSuites() {
-		return this.enabledCipherSuites.clone();
-	}
-
-	@Override
-	public void setEnabledCipherSuites(String[] suites) {
-		this.enabledCipherSuites = suites.clone();
+		return enabledCipherSuites.clone();
 	}
 
 	public void setSupportedProtocols(String[] protocols) {
-		this.supportedProtocols = protocols.clone();
+		if (protocols == null) {
+			this.supportedProtocols = new String[0];
+		} else {
+			this.supportedProtocols = protocols.clone();
+		}
 	}
 
 	@Override
@@ -123,7 +161,7 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 
 	@Override
 	public String[] getEnabledProtocols() {
-		return this.enabledProtocols.clone();
+		return enabledProtocols.clone();
 	}
 
 	@Override
@@ -133,7 +171,7 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 
 	@Override
 	public SSLSession getSession() {
-		if (this.session == null) {
+		if (session == null) {
 			try {
 				startHandshake();
 			} catch (IOException e) {
@@ -155,23 +193,19 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 
 	@Override
 	public void startHandshake() throws IOException {
-		// if (this.clientMode) {
-		this.protocol = new TlsClientProtocol(this.socket.getInputStream(), this.socket.getOutputStream(),
-				this.secureRandom);
-		String hostname = socket.getInetAddress().getCanonicalHostName();
-		this.peer = new BcTlsClient(this.tlsAuth, this.enabledCipherSuites, hostname);
-		((TlsClientProtocol) this.protocol).connect((TlsClient) this.peer);
-		// } else {
-		// this.protocol = new
-		// TlsServerProtocol(this.socket.getInputStream(),
-		// this.socket.getOutputStream(),
-		// this.secureRandom);
-		// String hostname =
-		// socket.getLocalAddress().getCanonicalHostName();
-		// this.peer = new BcTlsServer(this.tlsCred,
-		// this.enabledCipherSuites, hostname);
-		// ((TlsServerProtocol) this.protocol).accept((TlsServer) this.peer);
-		// }
+		if (this.clientMode) {
+			this.protocol = new TlsClientProtocol(this.socket.getInputStream(), this.socket.getOutputStream(),
+					this.secureRandom);
+			String hostname = socket.getInetAddress().getCanonicalHostName();
+			this.peer = new BcTlsClient(this.tlsAuth, this.enabledCipherSuites, hostname);
+			((TlsClientProtocol) this.protocol).connect((TlsClient) this.peer);
+		} else {
+			this.protocol = new TlsServerProtocol(this.socket.getInputStream(), this.socket.getOutputStream(),
+					this.secureRandom);
+			String hostname = socket.getLocalAddress().getCanonicalHostName();
+			this.peer = new BcTlsServer(this.tlsCred, this.enabledCipherSuites, hostname);
+			((TlsServerProtocol) this.protocol).accept((TlsServer) this.peer);
+		}
 		isConnected = true;
 		session = new BcTlsSession(this, peer);
 	}
@@ -188,34 +222,40 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 
 	@Override
 	public void setUseClientMode(boolean mode) {
-		if (mode == false) {
-			throw new UnsupportedOperationException("Server functionality is not implemented here");
-		}
+		this.clientMode = mode;
 	}
 
 	@Override
 	public boolean getUseClientMode() {
-		return true;
+		return this.clientMode;
 	}
 
 	@Override
 	public void setNeedClientAuth(boolean need) {
-		throw new UnsupportedOperationException("Server functionality is not implemented here");
+		if (need) {
+			this.clientAuthMode = ClientAuthMode.NEEDS;
+		} else {
+			this.clientAuthMode = ClientAuthMode.NONE;
+		}
 	}
 
 	@Override
 	public boolean getNeedClientAuth() {
-		throw new UnsupportedOperationException("Server functionality is not implemented here");
+		return this.clientAuthMode == ClientAuthMode.NEEDS;
 	}
 
 	@Override
 	public void setWantClientAuth(boolean want) {
-		throw new UnsupportedOperationException("Server functionality is not implemented here");
+		if (want) {
+			this.clientAuthMode = ClientAuthMode.WANTS;
+		} else {
+			this.clientAuthMode = ClientAuthMode.NONE;
+		}
 	}
 
 	@Override
 	public boolean getWantClientAuth() {
-		throw new UnsupportedOperationException("Server functionality is not implemented here");
+		return this.clientAuthMode == ClientAuthMode.WANTS;
 	}
 
 	@Override

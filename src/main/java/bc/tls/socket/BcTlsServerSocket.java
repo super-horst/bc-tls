@@ -21,6 +21,7 @@ package bc.tls.socket;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Socket;
 
 import javax.net.ssl.SSLServerSocket;
 
@@ -33,19 +34,39 @@ public class BcTlsServerSocket extends SSLServerSocket {
 	private String[] enabledProtocols;
 	private boolean enableSessionCreation;
 
+	private final BcTlsSocketFactory socketFactory;
+
 	public BcTlsServerSocket(int port) throws IOException {
 		super(port);
-		// TODO Auto-generated constructor stub
+		this.socketFactory = constructSocketFactory();
 	}
 
 	public BcTlsServerSocket(int port, int backlog) throws IOException {
 		super(port, backlog);
-		// TODO Auto-generated constructor stub
+		this.socketFactory = constructSocketFactory();
 	}
 
 	public BcTlsServerSocket(int port, int backlog, InetAddress address) throws IOException {
 		super(port, backlog, address);
-		// TODO Auto-generated constructor stub
+		this.socketFactory = constructSocketFactory();
+	}
+
+	private BcTlsSocketFactory constructSocketFactory() {
+		// TODO fix this!
+		BcTlsSocketFactory fac = new BcTlsSocketFactory(null);
+		fac.setDefaultCipherSuites(enabledCipherSuites);
+		fac.setSupportedCipherSuites(supportedCipherSuites);
+		fac.setClientFactory(false);
+		return fac;
+	}
+
+	@Override
+	public Socket accept() throws IOException {
+		Socket s = super.accept();
+
+		BcTlsSocket tlsSocket = this.socketFactory.createSocket(s, null, 0, true);
+		tlsSocket.startHandshake();
+		return tlsSocket;
 	}
 
 	public void setSupportedCipherSuites(String[] suites) {
