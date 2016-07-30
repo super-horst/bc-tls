@@ -1,9 +1,28 @@
+/**
+ * BouncyCastle TLS implementation
+ * Copyright (C) 2016  super-horst
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as 
+ * published by the Free Software Foundation; either version 3 of the 
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
+ */
 package bc.tls.trust;
 
+import java.security.Principal;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,73 +31,80 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.crypto.tls.Certificate;
 
+/**
+ * Simplest certificate chain generator implementation.
+ * <p>
+ * Will resolve multiple chains from a given collection of
+ * {@link X509Certificate} by looking up subject and issuer distinguished names.
+ * 
+ * @author super-horst
+ *
+ */
 public class NaiveChainGenerator implements CertChainGenerator {
 
 	private Collection<X509Certificate> certs;
 
-	// map certs by SKI
-	private Map<ByteHashKey, X509Certificate> mapped;
+	// map certs by Subject DN
+	private Map<Principal, X509Certificate> mapped;
 
 	@Override
-	public void initialise(Collection<X509Certificate> certificates) {
+	public void init(Collection<X509Certificate> certificates) {
 		this.certs = Collections.unmodifiableCollection(certificates);
-		this.mapped = new HashMap<ByteHashKey, X509Certificate>(certificates.size());
+		this.mapped = new HashMap<Principal, X509Certificate>(certificates.size());
 
 		for (X509Certificate certificate : certs) {
-			SubjectKeyIdentifier subjKeyId = getSki(certificate);
-			ByteHashKey key = new ByteHashKey(subjKeyId);
-			mapped.put(key, certificate);
+			mapped.put(certificate.getSubjectDN(), certificate);
 		}
 	}
 
 	@Override
-	public Collection<Certificate> resolveToChain() {
-		// mapping SKI to AKI
-		Map<ByteHashKey, ByteHashKey> fragments = new HashMap<ByteHashKey, ByteHashKey>();
+	public Collection<Certificate> generateChains() {
+		// mapping subject dn to issuer dn
+		Map<Principal, Principal> fragments = new HashMap<Principal, Principal>();
 
 		for (X509Certificate certificate : certs) {
 			if (isSelfSigned(certificate)) {
 				continue;
 			}
-			ByteHashKey akiKey = new ByteHashKey(getAki(certificate));
-			X509Certificate signingCert = mapped.get(akiKey);
+			Principal issuer = certificate.getIssuerDN();
+			X509Certificate signingCert = mapped.get(issuer);
 			if (signingCert == null) {
 				// no ca certificate in collection or ca certificate itself
 				continue;
 			}
 
-			ByteHashKey skiKey = new ByteHashKey(getSki(certificate));
-			fragments.put(skiKey, akiKey);
+			Principal subject = certificate.getSubjectDN();
+			fragments.put(subject, issuer);
 		}
 
-		Set<ByteHashKey> allSkis = fragments.keySet();
-		Set<ByteHashKey> allAkis = new HashSet<ByteHashKey>(fragments.values());
+		Set<Principal> allSubjects = fragments.keySet();
+		Set<Principal> allIssuers = new HashSet<Principal>(fragments.values());
 		// getting rid of everything that signed something, leaving only user
 		// certificates
-		allSkis.removeAll(allAkis);
+		allSubjects.removeAll(allIssuers);
 
-		Collection<Certificate> chains = new HashSet<Certificate>(allSkis.size());
-		for (ByteHashKey ski : allSkis) {
-			chains.add(chain(ski));
+		Collection<Certificate> chains = new HashSet<Certificate>(allSubjects.size());
+		for (Principal subject : allSubjects) {
+			chains.add(chain(subject));
 		}
 
 		return chains;
 	}
 
-	private Certificate chain(final ByteHashKey ski) {
-		X509Certificate cert = this.mapped.get(ski);
+	private Certificate chain(final Principal subject) {
+		X509Certificate cert = this.mapped.get(subject);
 		List<X509Certificate> chain = new ArrayList<X509Certificate>();
 		while (cert != null && !isSelfSigned(cert)) {
 			chain.add(cert);
-			cert = this.mapped.get(new ByteHashKey(getAki(cert)));
+			cert = this.mapped.get(cert.getIssuerDN());
 		}
-		chain.add(cert);
+		if (cert != null) {
+			chain.add(cert);
+		} else {
+			throw new IllegalArgumentException("Incomplete certificate chain given");
+		}
 
 		org.bouncycastle.asn1.x509.Certificate[] certChain = new org.bouncycastle.asn1.x509.Certificate[chain.size()];
 		for (int i = 0; i < chain.size(); i++) {
@@ -94,54 +120,6 @@ public class NaiveChainGenerator implements CertChainGenerator {
 	}
 
 	private boolean isSelfSigned(X509Certificate certificate) {
-		SubjectKeyIdentifier ski = getSki(certificate);
-		AuthorityKeyIdentifier aki = getAki(certificate);
-		if (aki == null) {
-			// let's assume that self signed certificates have no use for an AKI
-			return true;
-		}
-		return Arrays.equals(ski.getKeyIdentifier(), aki.getKeyIdentifier());
-	}
-
-	private SubjectKeyIdentifier getSki(X509Certificate cert) {
-		byte[] ski = cert.getExtensionValue(Extension.subjectKeyIdentifier.getId());
-		if (ski == null)
-			return null;
-
-		return SubjectKeyIdentifier.getInstance(ASN1OctetString.getInstance(ski).getOctets());
-	}
-
-	private AuthorityKeyIdentifier getAki(X509Certificate cert) {
-		byte[] aki = cert.getExtensionValue(Extension.authorityKeyIdentifier.getId());
-		if (aki == null)
-			return null;
-
-		return AuthorityKeyIdentifier.getInstance(ASN1OctetString.getInstance(aki).getOctets());
-	}
-
-	private static class ByteHashKey {
-
-		private final byte[] bytes;
-
-		public ByteHashKey(SubjectKeyIdentifier ski) {
-			this.bytes = ski.getKeyIdentifier();
-		}
-
-		public ByteHashKey(AuthorityKeyIdentifier aki) {
-			this.bytes = aki.getKeyIdentifier();
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (!(obj instanceof ByteHashKey)) {
-				return false;
-			}
-			return Arrays.equals(this.bytes, ((ByteHashKey) obj).bytes);
-		}
-
-		@Override
-		public int hashCode() {
-			return Arrays.hashCode(this.bytes);
-		}
+		return certificate.getSubjectDN().equals(certificate.getIssuerDN());
 	}
 }
