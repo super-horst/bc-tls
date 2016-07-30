@@ -1,4 +1,4 @@
-package bc.tls.socket;
+package bc.tls;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -47,7 +47,7 @@ public class CipherSuiteTest {
 	}
 
 	@Test
-	public void checkEmptyBehaviour() {
+	public void checkEmptyInputBehaviour() {
 		int[] intResult = CipherSuite.convert(new String[0]);
 		Assert.assertNotNull(intResult);
 		Assert.assertTrue(intResult.length == 0);

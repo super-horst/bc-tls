@@ -46,7 +46,7 @@ public class NaiveChainGenerator implements CertChainGenerator {
 
 	private Collection<X509Certificate> certs;
 
-	// map certs by Subject DN
+	// map certs by subject DN
 	private Map<Principal, X509Certificate> mapped;
 
 	@Override
@@ -61,7 +61,7 @@ public class NaiveChainGenerator implements CertChainGenerator {
 
 	@Override
 	public Collection<Certificate> generateChains() {
-		// mapping subject dn to issuer dn
+		// mapping subject DN to issuer DN
 		Map<Principal, Principal> fragments = new HashMap<Principal, Principal>();
 
 		for (X509Certificate certificate : certs) {
@@ -112,7 +112,7 @@ public class NaiveChainGenerator implements CertChainGenerator {
 			try {
 				certChain[i] = org.bouncycastle.asn1.x509.Certificate.getInstance(x509Cert.getEncoded());
 			} catch (CertificateEncodingException e) {
-				throw new IllegalStateException(e);
+				throw new IllegalArgumentException(e);
 			}
 		}
 
