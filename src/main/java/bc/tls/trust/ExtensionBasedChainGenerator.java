@@ -20,6 +20,7 @@
 package bc.tls.trust;
 
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,7 +71,7 @@ public class ExtensionBasedChainGenerator implements CertChainGenerator {
 	}
 
 	@Override
-	public Collection<Certificate> generateChains() {
+	public Collection<Certificate> generateChains() throws CertificateException {
 		// mapping SKI to AKI
 		Map<ByteHashKey, ByteHashKey> fragments = new HashMap<ByteHashKey, ByteHashKey>();
 
@@ -103,22 +104,25 @@ public class ExtensionBasedChainGenerator implements CertChainGenerator {
 		return chains;
 	}
 
-	private Certificate chain(final ByteHashKey ski) {
+	private Certificate chain(final ByteHashKey ski) throws CertificateException {
 		X509Certificate cert = this.mapped.get(ski);
 		List<X509Certificate> chain = new ArrayList<X509Certificate>();
 		while (cert != null && !isSelfSigned(cert)) {
 			chain.add(cert);
 			cert = this.mapped.get(new ByteHashKey(getAki(cert)));
 		}
-		chain.add(cert);
-
+		if (cert != null) {
+			chain.add(cert);
+		} else {
+			throw new CertificateException("Incomplete certificate chain given");
+		}
 		org.bouncycastle.asn1.x509.Certificate[] certChain = new org.bouncycastle.asn1.x509.Certificate[chain.size()];
 		for (int i = 0; i < chain.size(); i++) {
 			X509Certificate x509Cert = chain.get(i);
 			try {
 				certChain[i] = org.bouncycastle.asn1.x509.Certificate.getInstance(x509Cert.getEncoded());
 			} catch (CertificateEncodingException e) {
-				throw new IllegalStateException(e);
+				throw new CertificateException(e);
 			}
 		}
 

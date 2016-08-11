@@ -22,38 +22,42 @@ package bc.tls.socket;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.security.SecureRandom;
 
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocket;
+
+import org.bouncycastle.crypto.tls.TlsAuthentication;
 
 public class BcTlsServerSocket extends SSLServerSocket {
 
 	private ClientAuthMode clientAuthMode;
-	private String[] supportedCipherSuites;
-	private String[] enabledCipherSuites;
-	private String[] supportedProtocols;
-	private String[] enabledProtocols;
+	private String[] supportedCipherSuites = new String[0];
+	private String[] enabledCipherSuites = new String[0];
+	private String[] supportedProtocols = new String[0];
+	private String[] enabledProtocols = new String[0];
 	private boolean enableSessionCreation;
 
 	private final BcTlsSocketFactory socketFactory;
 
-	public BcTlsServerSocket(int port) throws IOException {
+	public BcTlsServerSocket(int port, SSLParameters params) throws IOException {
 		super(port);
+		setEnabledCipherSuites(params.getCipherSuites());
 		this.socketFactory = constructSocketFactory();
 	}
 
-	public BcTlsServerSocket(int port, int backlog) throws IOException {
+	public BcTlsServerSocket(int port, int backlog, SSLParameters params) throws IOException {
 		super(port, backlog);
 		this.socketFactory = constructSocketFactory();
 	}
 
-	public BcTlsServerSocket(int port, int backlog, InetAddress address) throws IOException {
+	public BcTlsServerSocket(int port, int backlog, InetAddress address, SSLParameters params) throws IOException {
 		super(port, backlog, address);
 		this.socketFactory = constructSocketFactory();
 	}
 
 	private BcTlsSocketFactory constructSocketFactory() {
-		// TODO fix this!
-		BcTlsSocketFactory fac = new BcTlsSocketFactory(null);
+		BcTlsSocketFactory fac = new BcTlsSocketFactory(new SSLParameters(getEnabledCipherSuites()));
 		fac.setDefaultCipherSuites(enabledCipherSuites);
 		fac.setSupportedCipherSuites(supportedCipherSuites);
 		fac.setClientFactory(false);
@@ -64,7 +68,8 @@ public class BcTlsServerSocket extends SSLServerSocket {
 	public Socket accept() throws IOException {
 		Socket s = super.accept();
 
-		BcTlsSocket tlsSocket = this.socketFactory.createSocket(s, null, 0, true);
+		BcTlsSocket tlsSocket = new BcTlsSocket(s, true, new SecureRandom(), (TlsAuthentication) null);
+		tlsSocket.setEnabledCipherSuites(enabledCipherSuites);
 		tlsSocket.startHandshake();
 		return tlsSocket;
 	}

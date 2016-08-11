@@ -8,8 +8,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.Principal;
-import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.HashSet;
@@ -65,7 +64,7 @@ public class NaiveChainGeneratorTest {
 	}
 
 	@Test
-	public void testing() throws IOException, StreamParsingException, CertificateEncodingException {
+	public void testing() throws IOException, StreamParsingException, CertificateException {
 		NaiveChainGenerator gen = new NaiveChainGenerator();
 		gen.init(certs);
 		Collection<Certificate> chains = gen.generateChains();

@@ -53,8 +53,7 @@ import bc.tls.CipherSuite;
 public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactoryManager {
 
 	/**
-	 * Thread safe map to hold configuration
-	 * TODO why thread safe?
+	 * Thread safe map to hold configuration TODO why thread safe?
 	 */
 	private volatile Map<String, Object> config = new ConcurrentHashMap<String, Object>();
 
@@ -118,7 +117,7 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	protected void reset() {
 		// TODO is this a reasonable selection?
 		setSupportedCipherSuites(CipherSuite.DEFAULT);
-		
+
 		setDefaultAuthentication(new BcTlsAuthentication());
 		setDefaultTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS);
 
@@ -325,12 +324,14 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 			return SecureRandom.getInstance(algorithm);
 		}
 
-		Provider provider;
+		Provider provider = null;
 		if (prov instanceof String) {
 			provider = Security.getProvider((String) prov);
 		} else if (prov instanceof Provider) {
 			provider = (Provider) prov;
-		} else {
+		}
+
+		if (provider == null) {
 			return SecureRandom.getInstance(algorithm);
 		}
 

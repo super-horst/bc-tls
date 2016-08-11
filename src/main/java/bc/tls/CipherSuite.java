@@ -572,6 +572,65 @@ public enum CipherSuite {
 	}
 
 	/**
+	 * @see {@link org.bouncycastle.crypto.tls.KeyExchangeAlgorithm}
+	 * 
+	 * @return this cipher suite's key exchange algorithm
+	 */
+	public int getKeyExchangeAlgorithm() {
+		try {
+			return TlsUtils.getKeyExchangeAlgorithm(this.id);
+		} catch (IOException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+	/**
+	 * @see {@link org.bouncycastle.crypto.tls.CipherType}
+	 * 
+	 * @return this cipher suite's cipher type
+	 */
+	public int getCipherType() {
+		try {
+			return TlsUtils.getCipherType(getKeyExchangeAlgorithm());
+		} catch (IOException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+	/**
+	 * @see {@link org.bouncycastle.crypto.tls.EncryptionAlgorithm}
+	 * 
+	 * @return this cipher suite's encryption algorithm
+	 */
+	public int getEncryptionAlgorithm() {
+		try {
+			return TlsUtils.getEncryptionAlgorithm(this.id);
+		} catch (IOException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+	/**
+	 * @see {@link org.bouncycastle.crypto.tls.MACAlgorithm}
+	 * 
+	 * @return this cipher suite's MAC algorithm
+	 */
+	public int getMACAlgorithm() {
+		try {
+			return TlsUtils.getMACAlgorithm(this.id);
+		} catch (IOException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+	/**
+	 * @return this cipher suite's minimum TLS version
+	 */
+	public ProtocolVersion getMinimumVersion() {
+		return TlsUtils.getMinimumVersion(this.id);
+	}
+
+	/**
 	 * 
 	 * @param suite
 	 *            id value
@@ -640,65 +699,6 @@ public enum CipherSuite {
 		}
 
 		return suiteInts;
-	}
-
-	/**
-	 * @see {@link org.bouncycastle.crypto.tls.KeyExchangeAlgorithm}
-	 * 
-	 * @return this cipher suite's key exchange algorithm
-	 */
-	public int getKeyExchangeAlgorithm() {
-		try {
-			return TlsUtils.getKeyExchangeAlgorithm(this.id);
-		} catch (IOException e) {
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-	/**
-	 * @see {@link org.bouncycastle.crypto.tls.CipherType}
-	 * 
-	 * @return this cipher suite's cipher type
-	 */
-	public int getCipherType() {
-		try {
-			return TlsUtils.getCipherType(getKeyExchangeAlgorithm());
-		} catch (IOException e) {
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-	/**
-	 * @see {@link org.bouncycastle.crypto.tls.EncryptionAlgorithm}
-	 * 
-	 * @return this cipher suite's encryption algorithm
-	 */
-	public int getEncryptionAlgorithm() {
-		try {
-			return TlsUtils.getEncryptionAlgorithm(this.id);
-		} catch (IOException e) {
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-	/**
-	 * @see {@link org.bouncycastle.crypto.tls.MACAlgorithm}
-	 * 
-	 * @return this cipher suite's MAC algorithm
-	 */
-	public int getMACAlgorithm() {
-		try {
-			return TlsUtils.getMACAlgorithm(this.id);
-		} catch (IOException e) {
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-	/**
-	 * @return this cipher suite's minimum TLS version
-	 */
-	public ProtocolVersion getMinimumVersion() {
-		return TlsUtils.getMinimumVersion(this.id);
 	}
 
 }

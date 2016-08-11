@@ -19,10 +19,16 @@
  */
 package bc.tls.socket;
 
+import java.io.IOException;
+
+import org.bouncycastle.crypto.tls.AlertDescription;
 import org.bouncycastle.crypto.tls.CertificateRequest;
 import org.bouncycastle.crypto.tls.DefaultTlsServer;
 import org.bouncycastle.crypto.tls.ProtocolVersion;
 import org.bouncycastle.crypto.tls.TlsCredentials;
+import org.bouncycastle.crypto.tls.TlsEncryptionCredentials;
+import org.bouncycastle.crypto.tls.TlsFatalAlert;
+import org.bouncycastle.crypto.tls.TlsSignerCredentials;
 
 import bc.tls.CipherSuite;
 
@@ -49,6 +55,40 @@ public class BcTlsServer extends DefaultTlsServer {
 	@Override
 	public ProtocolVersion getMinimumVersion() {
 		return ProtocolVersion.TLSv12;
+	}
+
+	@Override
+	public CertificateRequest getCertificateRequest() throws IOException {
+		return null;
+
+	}
+
+	@Override
+	public int getSelectedCipherSuite() throws IOException {
+		if (this.selectedCipherSuite == 0) {
+			return super.getSelectedCipherSuite();
+		}
+		return this.selectedCipherSuite;
+	}
+
+	@Override
+	protected TlsSignerCredentials getDSASignerCredentials() throws IOException {
+		throw new TlsFatalAlert(AlertDescription.internal_error);
+	}
+
+	@Override
+	protected TlsSignerCredentials getECDSASignerCredentials() throws IOException {
+		throw new TlsFatalAlert(AlertDescription.internal_error);
+	}
+
+	@Override
+	protected TlsEncryptionCredentials getRSAEncryptionCredentials() throws IOException {
+		throw new TlsFatalAlert(AlertDescription.internal_error);
+	}
+
+	@Override
+	protected TlsSignerCredentials getRSASignerCredentials() throws IOException {
+		throw new TlsFatalAlert(AlertDescription.internal_error);
 	}
 
 }

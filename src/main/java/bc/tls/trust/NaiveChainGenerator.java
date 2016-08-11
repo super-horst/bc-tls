@@ -21,6 +21,7 @@ package bc.tls.trust;
 
 import java.security.Principal;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +39,10 @@ import org.bouncycastle.crypto.tls.Certificate;
  * <p>
  * Will resolve multiple chains from a given collection of
  * {@link X509Certificate} by looking up subject and issuer distinguished names.
+ * <p>
+ * Please be aware, that this algorithm will give you <b>all possible</b>
+ * chains. Behaviour may include: The lower chain end being a Sub-CA certificate,
+ * if there are no certificates signed with this certificate.
  * 
  * @author super-horst
  *
@@ -60,7 +65,7 @@ public class NaiveChainGenerator implements CertChainGenerator {
 	}
 
 	@Override
-	public Collection<Certificate> generateChains() {
+	public Collection<Certificate> generateChains() throws CertificateException {
 		// mapping subject DN to issuer DN
 		Map<Principal, Principal> fragments = new HashMap<Principal, Principal>();
 
@@ -93,7 +98,7 @@ public class NaiveChainGenerator implements CertChainGenerator {
 		return chains;
 	}
 
-	private Certificate chain(final Principal subject) {
+	private Certificate chain(final Principal subject) throws CertificateException {
 		X509Certificate cert = this.mapped.get(subject);
 		List<X509Certificate> chain = new ArrayList<X509Certificate>();
 		while (cert != null && !isSelfSigned(cert)) {
@@ -103,7 +108,7 @@ public class NaiveChainGenerator implements CertChainGenerator {
 		if (cert != null) {
 			chain.add(cert);
 		} else {
-			throw new IllegalArgumentException("Incomplete certificate chain given");
+			throw new CertificateException("Incomplete certificate chain given");
 		}
 
 		org.bouncycastle.asn1.x509.Certificate[] certChain = new org.bouncycastle.asn1.x509.Certificate[chain.size()];
@@ -112,7 +117,7 @@ public class NaiveChainGenerator implements CertChainGenerator {
 			try {
 				certChain[i] = org.bouncycastle.asn1.x509.Certificate.getInstance(x509Cert.getEncoded());
 			} catch (CertificateEncodingException e) {
-				throw new IllegalArgumentException(e);
+				throw new CertificateException(e);
 			}
 		}
 

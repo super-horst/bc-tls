@@ -46,10 +46,13 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	private String[] defaultCipherSuites;
 	private String[] supportedCipherSuites;
 
+	private SSLParameters defaults;
+
 	/**
 	 * Default constructor
 	 */
 	public BcTlsServerSocketFactory(SSLParameters defaults) {
+		this.defaults = defaults;
 		setDefaultCipherSuites(defaults.getCipherSuites());
 
 		reset();
@@ -129,8 +132,8 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	}
 
 	private BcTlsServerSocket createSocket(Integer port, Integer backlog, InetAddress ifAddress) throws IOException {
-		return new BcTlsServerSocket(0);
-		
+		return new BcTlsServerSocket(0, this.defaults);
+
 		// TODO implement! :)
 
 		// if (clientAuthMode == ClientAuthMode.NEEDS) {

@@ -40,7 +40,7 @@ import javax.net.ssl.TrustManager;
 public class BcTlsContextSpi extends SSLContextSpi {
 
 	private boolean isInitialised;
-	
+
 	private SSLParameters params;
 
 	private KeyManager[] keyManager;
@@ -50,12 +50,11 @@ public class BcTlsContextSpi extends SSLContextSpi {
 	@Override
 	protected void engineInit(KeyManager[] km, TrustManager[] tm, SecureRandom sr) throws KeyManagementException {
 		if (isInitialised) {
-			return;
+			throw new IllegalStateException("Context is already initialised");
 		}
 		this.keyManager = km;
-		this.trustManager = tm;
+		this.trustManager = tm; // this should be X509TrustManager -> no it shouldn't!!
 		this.random = sr;
-
 	}
 
 	@Override

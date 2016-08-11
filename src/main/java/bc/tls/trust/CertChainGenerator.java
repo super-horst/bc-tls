@@ -19,6 +19,7 @@
  */
 package bc.tls.trust;
 
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 
@@ -42,14 +43,20 @@ public interface CertChainGenerator {
 	 * 
 	 * @param certificates
 	 *            certificates used to generate chains
+	 * 
+	 * @throws CertificateException
+	 *             if the certificate chains are incomplete/erroneous
 	 */
-	void init(Collection<X509Certificate> certificates);
+	void init(Collection<X509Certificate> certificates) throws CertificateException;
 
 	/**
 	 * Generate certificate chains from the given certificates.
 	 * 
 	 * @return a bunch of certificate chains
+	 * 
+	 * @throws CertificateException
+	 *             if the certificate chains are incomplete/erroneous
 	 */
-	Collection<Certificate> generateChains();
+	Collection<Certificate> generateChains() throws CertificateException;
 
 }

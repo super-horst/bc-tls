@@ -79,7 +79,7 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 	 * @param authentication
 	 *            tls authentication
 	 */
-	BcTlsSocket(Socket s, boolean autoClose, SecureRandom random, TlsAuthentication authentication) {
+	public BcTlsSocket(Socket s, boolean autoClose, SecureRandom random, TlsAuthentication authentication) {
 		super(s, autoClose);
 		this.secureRandom = random;
 		this.tlsAuth = authentication;
@@ -97,7 +97,7 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 	 * @param credentials
 	 *            tls credentials
 	 */
-	BcTlsSocket(Socket s, boolean autoClose, SecureRandom random, TlsCredentials credentials) {
+	public BcTlsSocket(Socket s, boolean autoClose, SecureRandom random, TlsCredentials credentials) {
 		super(s, autoClose);
 		this.secureRandom = random;
 		this.tlsAuth = null;
