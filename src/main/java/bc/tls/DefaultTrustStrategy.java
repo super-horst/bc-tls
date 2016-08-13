@@ -24,30 +24,47 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.bouncycastle.asn1.x509.Certificate;
+import org.bouncycastle.crypto.tls.EncryptionAlgorithm;
 import org.bouncycastle.crypto.tls.HashAlgorithm;
+import org.bouncycastle.crypto.tls.KeyExchangeAlgorithm;
 import org.bouncycastle.crypto.tls.SignatureAlgorithm;
+import org.bouncycastle.crypto.tls.TlsUtils;
 
 public class DefaultTrustStrategy implements TrustStrategy {
 
-	private Set<Short> sigAlgos;
-	private Set<Short> hashAlgos;
+	private Set<Short> sigAlgos = new HashSet<Short>();
+	private Set<Short> hashAlgos = new HashSet<Short>();
+	private Set<Integer> encAlgos = new HashSet<Integer>();
+	private Set<Integer> keyExAlgos = new HashSet<Integer>();
+	
+	private Set<Certificate> trustCerts = new HashSet<Certificate>();
 
 	public DefaultTrustStrategy() {
-		this.sigAlgos = new HashSet<Short>();
 		this.sigAlgos.add(SignatureAlgorithm.ecdsa);
 		this.sigAlgos.add(SignatureAlgorithm.dsa);
 		this.sigAlgos.add(SignatureAlgorithm.rsa);
+
+		this.hashAlgos.add(HashAlgorithm.sha256);
+		this.hashAlgos.add(HashAlgorithm.sha384);
+		this.hashAlgos.add(HashAlgorithm.sha512);
 		
-		this.hashAlgos = new HashSet<Short>();
-		this.sigAlgos.add(HashAlgorithm.sha256);
-		this.sigAlgos.add(HashAlgorithm.sha384);
-		this.sigAlgos.add(HashAlgorithm.sha512);
+		this.encAlgos.add(EncryptionAlgorithm.AES_128_GCM);
+		this.encAlgos.add(EncryptionAlgorithm.AES_128_CBC);
+		
+		this.keyExAlgos.add(KeyExchangeAlgorithm.ECDHE_ECDSA);
+		this.keyExAlgos.add(KeyExchangeAlgorithm.ECDHE_RSA);
+		this.keyExAlgos.add(KeyExchangeAlgorithm.DHE_DSS);
+		this.keyExAlgos.add(KeyExchangeAlgorithm.DHE_RSA);
+		this.keyExAlgos.add(KeyExchangeAlgorithm.RSA);
 	}
 
+	public void addTrustedCertificates(Set<Certificate> trusted) {
+		this.trustCerts.addAll(trusted);
+	}
+	
 	@Override
 	public Set<Certificate> getTrustedCertificates() {
-
-		return null;
+		return Collections.unmodifiableSet(this.trustCerts);
 	}
 
 	@Override
@@ -58,6 +75,16 @@ public class DefaultTrustStrategy implements TrustStrategy {
 	@Override
 	public Set<Short> getHashAlgorithms() {
 		return Collections.unmodifiableSet(this.hashAlgos);
+	}
+
+	@Override
+	public Set<Integer> getEncryptionAlgorithms() {
+		return Collections.unmodifiableSet(this.encAlgos);
+	}
+
+	@Override
+	public Set<Integer> getKeyExchangeAlgorithms() {
+		return Collections.unmodifiableSet(this.keyExAlgos);
 	}
 
 }

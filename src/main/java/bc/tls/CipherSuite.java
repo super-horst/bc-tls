@@ -20,9 +20,14 @@
 package bc.tls;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
+import org.bouncycastle.crypto.tls.HashAlgorithm;
 import org.bouncycastle.crypto.tls.ProtocolVersion;
 import org.bouncycastle.crypto.tls.TlsUtils;
 
@@ -37,34 +42,15 @@ import org.bouncycastle.crypto.tls.TlsUtils;
  * @author super-horst
  */
 public enum CipherSuite {
-	TLS_NULL_WITH_NULL_NULL(0x0000),
 	TLS_RSA_WITH_NULL_MD5(0x0001),
 	TLS_RSA_WITH_NULL_SHA(0x0002),
-	TLS_RSA_EXPORT_WITH_RC4_40_MD5(0x0003),
 	TLS_RSA_WITH_RC4_128_MD5(0x0004),
 	TLS_RSA_WITH_RC4_128_SHA(0x0005),
-	TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5(0x0006),
-	TLS_RSA_WITH_IDEA_CBC_SHA(0x0007),
-	TLS_RSA_EXPORT_WITH_DES40_CBC_SHA(0x0008),
-	TLS_RSA_WITH_DES_CBC_SHA(0x0009),
 	TLS_RSA_WITH_3DES_EDE_CBC_SHA(0x000A),
-	TLS_DH_DSS_EXPORT_WITH_DES40_CBC_SHA(0x000B),
-	TLS_DH_DSS_WITH_DES_CBC_SHA(0x000C),
 	TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA(0x000D),
-	TLS_DH_RSA_EXPORT_WITH_DES40_CBC_SHA(0x000E),
-	TLS_DH_RSA_WITH_DES_CBC_SHA(0x000F),
 	TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA(0x0010),
-	TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA(0x0011),
-	TLS_DHE_DSS_WITH_DES_CBC_SHA(0x0012),
 	TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA(0x0013),
-	TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA(0x0014),
-	TLS_DHE_RSA_WITH_DES_CBC_SHA(0x0015),
 	TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA(0x0016),
-	TLS_DH_anon_EXPORT_WITH_RC4_40_MD5(0x0017),
-	TLS_DH_anon_WITH_RC4_128_MD5(0x0018),
-	TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA(0x0019),
-	TLS_DH_anon_WITH_DES_CBC_SHA(0x001A),
-	TLS_DH_anon_WITH_3DES_EDE_CBC_SHA(0x001B),
 
 	/*
 	 * Note: The cipher suite values { 0x00, 0x1C } and { 0x00, 0x1D } are
@@ -79,13 +65,11 @@ public enum CipherSuite {
 	TLS_DH_RSA_WITH_AES_128_CBC_SHA(0x0031),
 	TLS_DHE_DSS_WITH_AES_128_CBC_SHA(0x0032),
 	TLS_DHE_RSA_WITH_AES_128_CBC_SHA(0x0033),
-	TLS_DH_anon_WITH_AES_128_CBC_SHA(0x0034),
 	TLS_RSA_WITH_AES_256_CBC_SHA(0x0035),
 	TLS_DH_DSS_WITH_AES_256_CBC_SHA(0x0036),
 	TLS_DH_RSA_WITH_AES_256_CBC_SHA(0x0037),
 	TLS_DHE_DSS_WITH_AES_256_CBC_SHA(0x0038),
 	TLS_DHE_RSA_WITH_AES_256_CBC_SHA(0x0039),
-	TLS_DH_anon_WITH_AES_256_CBC_SHA(0x003A),
 
 	/*
 	 * RFC 5932
@@ -95,28 +79,24 @@ public enum CipherSuite {
 	TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA(0x0043),
 	TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA(0x0044),
 	TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA(0x0045),
-	TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA(0x0046),
 
 	TLS_RSA_WITH_CAMELLIA_256_CBC_SHA(0x0084),
 	TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA(0x0085),
 	TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA(0x0086),
 	TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA(0x0087),
 	TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA(0x0088),
-	TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA(0x0089),
 
 	TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256(0x00BA),
 	TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256(0x00BB),
 	TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256(0x00BC),
 	TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256(0x00BD),
 	TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256(0x00BE),
-	TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256(0x00BF),
 
 	TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256(0x00C0),
 	TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256(0x00C1),
 	TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256(0x00C2),
 	TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256(0x00C3),
 	TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256(0x00C4),
-	TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256(0x00C5),
 
 	/*
 	 * RFC 4162
@@ -126,7 +106,6 @@ public enum CipherSuite {
 	TLS_DH_RSA_WITH_SEED_CBC_SHA(0x0098),
 	TLS_DHE_DSS_WITH_SEED_CBC_SHA(0x0099),
 	TLS_DHE_RSA_WITH_SEED_CBC_SHA(0x009A),
-	TLS_DH_anon_WITH_SEED_CBC_SHA(0x009B),
 
 	/*
 	 * RFC 4279
@@ -207,8 +186,6 @@ public enum CipherSuite {
 	TLS_DH_RSA_WITH_AES_256_CBC_SHA256(0x0069),
 	TLS_DHE_DSS_WITH_AES_256_CBC_SHA256(0x006A),
 	TLS_DHE_RSA_WITH_AES_256_CBC_SHA256(0x006B),
-	TLS_DH_anon_WITH_AES_128_CBC_SHA256(0x006C),
-	TLS_DH_anon_WITH_AES_256_CBC_SHA256(0x006D),
 
 	/*
 	 * RFC 5288
@@ -223,8 +200,6 @@ public enum CipherSuite {
 	TLS_DHE_DSS_WITH_AES_256_GCM_SHA384(0x00A3),
 	TLS_DH_DSS_WITH_AES_128_GCM_SHA256(0x00A4),
 	TLS_DH_DSS_WITH_AES_256_GCM_SHA384(0x00A5),
-	TLS_DH_anon_WITH_AES_128_GCM_SHA256(0x00A6),
-	TLS_DH_anon_WITH_AES_256_GCM_SHA384(0x00A7),
 
 	/*
 	 * RFC 5289
@@ -282,11 +257,6 @@ public enum CipherSuite {
 	TLS_ECDHE_PSK_WITH_NULL_SHA384(0xC03B),
 
 	/*
-	 * RFC 5746
-	 */
-	TLS_EMPTY_RENEGOTIATION_INFO_SCSV(0x00FF),
-
-	/*
 	 * RFC 6367
 	 */
 	TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256(0xC072),
@@ -308,8 +278,6 @@ public enum CipherSuite {
 	TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384(0xC081),
 	TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256(0xC082),
 	TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384(0xC083),
-	TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256(0xC084),
-	TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384(0xC085),
 	TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256(0xC086),
 	TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384(0xC087),
 	TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256(0xC088),
@@ -363,31 +331,9 @@ public enum CipherSuite {
 	TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8(0xC0AF),
 
 	/*
-	 * draft_agl_tls_chacha20poly1305_04
+	 * RFC 5746
 	 */
-	TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256(0xCC13),
-	TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256(0xCC14),
-	TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256(0xCC15),
-
-	/*
-	 * draft_josefsson_salsa20_tls_04
-	 */
-	TLS_RSA_WITH_ESTREAM_SALSA20_SHA1(0xE410),
-	TLS_RSA_WITH_SALSA20_SHA1(0xE411),
-	TLS_ECDHE_RSA_WITH_ESTREAM_SALSA20_SHA1(0xE412),
-	TLS_ECDHE_RSA_WITH_SALSA20_SHA1(0xE413),
-	TLS_ECDHE_ECDSA_WITH_ESTREAM_SALSA20_SHA1(0xE414),
-	TLS_ECDHE_ECDSA_WITH_SALSA20_SHA1(0xE415),
-	TLS_PSK_WITH_ESTREAM_SALSA20_SHA1(0xE416),
-	TLS_PSK_WITH_SALSA20_SHA1(0xE417),
-	TLS_ECDHE_PSK_WITH_ESTREAM_SALSA20_SHA1(0xE418),
-	TLS_ECDHE_PSK_WITH_SALSA20_SHA1(0xE419),
-	TLS_RSA_PSK_WITH_ESTREAM_SALSA20_SHA1(0xE41A),
-	TLS_RSA_PSK_WITH_SALSA20_SHA1(0xE41B),
-	TLS_DHE_PSK_WITH_ESTREAM_SALSA20_SHA1(0xE41C),
-	TLS_DHE_PSK_WITH_SALSA20_SHA1(0xE41D),
-	TLS_DHE_RSA_WITH_ESTREAM_SALSA20_SHA1(0xE41E),
-	TLS_DHE_RSA_WITH_SALSA20_SHA1(0xE41F),
+	TLS_EMPTY_RENEGOTIATION_INFO_SCSV(0x00FF),
 
 	/*
 	 * draft_ietf_tls_downgrade_scsv_00
@@ -396,8 +342,16 @@ public enum CipherSuite {
 
 	private static final Map<Integer, CipherSuite> LOOKUP = new HashMap<Integer, CipherSuite>();
 
+	private static final Map<Integer, Set<CipherSuite>> KEY_EXCHANGE_LOOKUP = new HashMap<Integer, Set<CipherSuite>>();
+
+	private static final Map<Integer, Set<CipherSuite>> ENC_ALGO_LOOKUP = new HashMap<Integer, Set<CipherSuite>>();
+
+	private static final Map<Short, Set<CipherSuite>> HASH_ALGO_LOOKUP = new HashMap<Short, Set<CipherSuite>>();
+
 	/**
 	 * Some good default I scraped up somewhere
+	 * 
+	 * @deprecated
 	 */
 	public static final String[] DEFAULT = convert(new CipherSuite[] {
 			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
@@ -419,139 +373,36 @@ public enum CipherSuite {
 			CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA });
 
 	/**
-	 * Cipher suites for forward secrecy
-	 */
-	public static final String[] FORWARD_SECRECY = convert(new CipherSuite[] {
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-
-			CipherSuite.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
-			CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 });
-
-	/**
-	 * OpenSSL cipher group HIGH
-	 * <p>
-	 * via: {@code openssl ciphers -s -tls1_2 HIGH}
-	 */
-	public static final String[] HIGH = convert(new CipherSuite[] {
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA,
-			CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-			CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
-
-			CipherSuite.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
-			CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
-			CipherSuite.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA,
-			CipherSuite.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA,
-
-			CipherSuite.TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,
-			CipherSuite.TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA,
-			CipherSuite.TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,
-			CipherSuite.TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA,
-			CipherSuite.TLS_ECDH_anon_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_ECDH_anon_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
-
-			CipherSuite.TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA,
-
-			CipherSuite.TLS_DH_anon_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_DH_anon_WITH_AES_256_CBC_SHA256,
-			CipherSuite.TLS_DH_anon_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_DH_anon_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_DH_anon_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_DH_anon_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
-			CipherSuite.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA,
-			CipherSuite.TLS_DH_anon_WITH_DES_CBC_SHA,
-
-			CipherSuite.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256,
-			CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
-			CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,
-			CipherSuite.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA,
-
-			CipherSuite.TLS_PSK_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_PSK_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_PSK_WITH_3DES_EDE_CBC_SHA,
-
-			CipherSuite.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_WITH_AES_256_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_WITH_AES_128_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA,
-			CipherSuite.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA });
-
-	/**
-	 * OpenSSL cipher group MEDIUM
-	 * <p>
-	 * via: {@code openssl ciphers -s -tls1_2 MEDIUM}
-	 */
-	public static final String[] MEDIUM = convert(new CipherSuite[] {
-			CipherSuite.TLS_DHE_RSA_WITH_SEED_CBC_SHA,
-			CipherSuite.TLS_DHE_DSS_WITH_SEED_CBC_SHA,
-			CipherSuite.TLS_DH_anon_WITH_SEED_CBC_SHA,
-			CipherSuite.TLS_RSA_WITH_SEED_CBC_SHA,
-			CipherSuite.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
-			CipherSuite.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
-			CipherSuite.TLS_ECDH_anon_WITH_RC4_128_SHA,
-			CipherSuite.TLS_DH_anon_WITH_RC4_128_MD5,
-			CipherSuite.TLS_ECDH_RSA_WITH_RC4_128_SHA,
-			CipherSuite.TLS_ECDH_ECDSA_WITH_RC4_128_SHA,
-			CipherSuite.TLS_RSA_WITH_RC4_128_SHA,
-			CipherSuite.TLS_RSA_WITH_RC4_128_MD5,
-			CipherSuite.TLS_PSK_WITH_RC4_128_SHA });
-
-	/**
 	 * Build lookup table
 	 */
 	static {
 		for (CipherSuite suite : CipherSuite.values()) {
 			LOOKUP.put(suite.id, suite);
+			{
+				Set<CipherSuite> exchangeSuites = KEY_EXCHANGE_LOOKUP.get(suite.keyExchange);
+				if (exchangeSuites == null) {
+					exchangeSuites = EnumSet.<CipherSuite> noneOf(CipherSuite.class);
+					KEY_EXCHANGE_LOOKUP.put(suite.keyExchange, exchangeSuites);
+				}
+				exchangeSuites.add(suite);
+			}
+			{
+				Set<CipherSuite> cipherTypeSuites = ENC_ALGO_LOOKUP.get(suite.encryptionAlgo);
+				if (cipherTypeSuites == null) {
+					cipherTypeSuites = EnumSet.<CipherSuite> noneOf(CipherSuite.class);
+					ENC_ALGO_LOOKUP.put(suite.encryptionAlgo, cipherTypeSuites);
+				}
+				cipherTypeSuites.add(suite);
+			}
+			{
+
+				Set<CipherSuite> hashAlgoSuites = HASH_ALGO_LOOKUP.get(suite.hashAlgo);
+				if (hashAlgoSuites == null) {
+					hashAlgoSuites = EnumSet.<CipherSuite> noneOf(CipherSuite.class);
+					HASH_ALGO_LOOKUP.put(suite.hashAlgo, hashAlgoSuites);
+				}
+				hashAlgoSuites.add(suite);
+			}
 		}
 	}
 
@@ -559,9 +410,42 @@ public enum CipherSuite {
 	 * This suite's id
 	 */
 	private final Integer id;
+	private Integer keyExchange;
+	private Integer encryptionAlgo;
+	private Short hashAlgo;
 
 	private CipherSuite(Integer id) {
 		this.id = id;
+		try {
+			this.keyExchange = TlsUtils.getKeyExchangeAlgorithm(this.id);
+		} catch (IOException e) {
+			this.keyExchange = null;
+		}
+
+		try {
+			this.encryptionAlgo = TlsUtils.getEncryptionAlgorithm(this.id);
+		} catch (IOException e) {
+			this.encryptionAlgo = null;
+		}
+
+		String hashSpec = name().substring(name().lastIndexOf('_') + 1, name().length());
+		if (hashSpec.contains("SHA")) {
+			String shaLength = hashSpec.substring(hashSpec.length() - 3, hashSpec.length());
+			if (shaLength.equals("SHA")) {
+				this.hashAlgo = HashAlgorithm.sha1;
+			} else if (shaLength.equals("256")) {
+				this.hashAlgo = HashAlgorithm.sha256;
+			} else if (shaLength.equals("384")) {
+				this.hashAlgo = HashAlgorithm.sha384;
+			} else if (shaLength.equals("512")) {
+				this.hashAlgo = HashAlgorithm.sha512;
+			}
+		} else if (hashSpec.contains("MD5")) {
+			this.hashAlgo = HashAlgorithm.md5;
+		} else {
+			this.hashAlgo = null;
+		}
+
 	}
 
 	/**
@@ -640,6 +524,30 @@ public enum CipherSuite {
 	 */
 	public static CipherSuite lookup(int suite) {
 		return LOOKUP.get(suite);
+	}
+
+	public static Set<CipherSuite> lookupByKeyExchange(int keyExchange) {
+		Set<CipherSuite> retVal = KEY_EXCHANGE_LOOKUP.get(keyExchange);
+		if (retVal == null) {
+			return Collections.<CipherSuite> emptySet();
+		}
+		return retVal;
+	}
+
+	public static Set<CipherSuite> lookupByEncryptionAlgorithm(int encAlgo) {
+		Set<CipherSuite> retVal = ENC_ALGO_LOOKUP.get(encAlgo);
+		if (retVal == null) {
+			return Collections.<CipherSuite> emptySet();
+		}
+		return retVal;
+	}
+
+	public static Set<CipherSuite> lookupByHashAlgorithm(short hashAlgo) {
+		Set<CipherSuite> retVal = HASH_ALGO_LOOKUP.get(hashAlgo);
+		if (retVal == null) {
+			return Collections.<CipherSuite> emptySet();
+		}
+		return retVal;
 	}
 
 	/**

@@ -12,7 +12,7 @@ public class CipherSuiteTest {
 
 	private static final CipherSuite[] suites = new CipherSuite[] {
 			CipherSuite.TLS_DH_DSS_WITH_AES_128_GCM_SHA256,
-			CipherSuite.TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA };
+			CipherSuite.TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA};
 
 	private static final String[] suiteStrings = new String[suites.length];
 	private static final int[] suiteInts = new int[suites.length];

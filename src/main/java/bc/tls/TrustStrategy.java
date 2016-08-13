@@ -28,16 +28,26 @@ import org.bouncycastle.crypto.tls.SignatureAlgorithm;
 public interface TrustStrategy {
 
 	Set<Certificate> getTrustedCertificates();
-	
+
 	/**
 	 * @return signature algorithms {@link SignatureAlgorithm}
 	 */
 	Set<Short> getSignatureAlgorithms();
-	
-	
+
 	/**
 	 * @return hash algorithms {@link HashAlgorithm}
 	 */
 	Set<Short> getHashAlgorithms();
+
+	/**
+	 * @return encryption algorithms {@link EncryptionAlgorithm}
+	 */
+	Set<Integer> getEncryptionAlgorithms();
+
+	/**
+	 * @return key exchange algorithms {@link KeyExchangeAlgorithm}
+	 */
+	Set<Integer> getKeyExchangeAlgorithms();
+	
 	
 }
