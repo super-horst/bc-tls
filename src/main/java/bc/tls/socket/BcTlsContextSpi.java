@@ -31,6 +31,9 @@ import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
+import bc.tls.logging.LogConsumer;
+import bc.tls.logging.LogConsumerFactory;
+
 /**
  * BC-tls SSLContextSpi implementation
  * 
@@ -38,6 +41,8 @@ import javax.net.ssl.TrustManager;
  *
  */
 public class BcTlsContextSpi extends SSLContextSpi {
+
+	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("ContextSpi");
 
 	private boolean isInitialised;
 
@@ -52,8 +57,11 @@ public class BcTlsContextSpi extends SSLContextSpi {
 		if (isInitialised) {
 			throw new IllegalStateException("Context is already initialised");
 		}
+		LOG.info("Initialising context");
+
 		this.keyManager = km;
-		this.trustManager = tm; // this should be X509TrustManager -> no it shouldn't!!
+		this.trustManager = tm; // this should be X509TrustManager
+								// -> no it shouldn't!!
 		this.random = sr;
 	}
 

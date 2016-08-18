@@ -14,11 +14,19 @@ import javax.net.ssl.SSLSocketFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import bc.tls.CipherSuite;
+import bc.tls.logging.Log4JConsumer;
+import bc.tls.logging.LogConsumerFactory;
 
 public class BcTlsSocketFactoryTest {
+
+	@BeforeClass
+	public static void setSystem() {
+		System.setProperty(LogConsumerFactory.PROPERTY_KEY, Log4JConsumer.class.getCanonicalName());
+	}
 
 	private static final Integer TEST_PORT = 12345;
 
@@ -64,7 +72,7 @@ public class BcTlsSocketFactoryTest {
 	}
 
 	@Test
-	public void defaultRegistrationTest() {
+	public void defaultRegistrationTest() throws UnknownHostException, IOException {
 		BcTlsSocketFactory.setDefault();
 		SocketFactory sockFac = SSLSocketFactory.getDefault();
 		Assert.assertTrue(sockFac instanceof BcTlsSocketFactory);
@@ -95,7 +103,7 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void simpleSocketCreationTest() throws UnknownHostException, IOException {
-		SocketFactory sockFac =  new BcTlsSocketFactory(this.params);
+		SocketFactory sockFac = new BcTlsSocketFactory(this.params);
 
 		try (Socket socket = sockFac.createSocket("localhost", TEST_PORT)) {
 			Assert.assertTrue(socket instanceof BcTlsSocket);
@@ -105,7 +113,7 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void locallyBoundSocketCreationTest() throws UnknownHostException, IOException {
-		SocketFactory sockFac =  new BcTlsSocketFactory(this.params);
+		SocketFactory sockFac = new BcTlsSocketFactory(this.params);
 		InetAddress addr = InetAddress.getByName("127.0.0.1");
 
 		try (Socket socket = sockFac.createSocket("localhost", TEST_PORT, addr, 0)) {

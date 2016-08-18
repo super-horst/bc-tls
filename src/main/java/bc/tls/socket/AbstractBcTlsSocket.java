@@ -27,13 +27,19 @@ import java.nio.channels.SocketChannel;
 
 import javax.net.ssl.SSLSocket;
 
+import bc.tls.logging.LogConsumer;
+import bc.tls.logging.LogConsumerFactory;
+
 /**
  * Abstract base class to handle the wrapped raw socket.
  * 
  * @author super-horst
  * 
  */
-public abstract class AbstractBcTlsSocket extends SSLSocket {
+abstract class AbstractBcTlsSocket extends SSLSocket {
+
+	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("RawSocket");
+
 	private final Object closeLock = new Object();
 	private final boolean autoClose;
 	private boolean closed = false;
@@ -44,9 +50,9 @@ public abstract class AbstractBcTlsSocket extends SSLSocket {
 	 * @param rawSocket
 	 *            the socket to manage
 	 * @param autoClose
-	 *            wheter to close to socket on close of parent
+	 *            whether to close to socket on close of parent
 	 */
-	public AbstractBcTlsSocket(Socket rawSocket, boolean autoClose) {
+	AbstractBcTlsSocket(Socket rawSocket, boolean autoClose) {
 		this.socket = rawSocket;
 		this.autoClose = autoClose;
 	}
@@ -58,6 +64,7 @@ public abstract class AbstractBcTlsSocket extends SSLSocket {
 				return;
 			}
 			if (autoClose) {
+				LOG.info("Closing socket");
 				this.socket.close();
 			}
 			closed = true;

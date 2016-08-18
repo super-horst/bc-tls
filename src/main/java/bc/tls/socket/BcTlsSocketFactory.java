@@ -34,6 +34,7 @@ import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +44,9 @@ import javax.net.ssl.SSLSocketFactory;
 
 import org.bouncycastle.crypto.tls.TlsAuthentication;
 import bc.tls.CipherSuite;
+import bc.tls.logging.LogConsumer;
+import bc.tls.logging.LogConsumerFactory;
+import bc.tls.logging.LogLevel;
 
 /**
  * BC tls socket factory, allows for per-connection authentication
@@ -51,6 +55,8 @@ import bc.tls.CipherSuite;
  *
  */
 public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactoryManager {
+
+	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("SocketFactory");
 
 	/**
 	 * Thread safe map to hold configuration TODO why thread safe?
@@ -77,6 +83,7 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	 *             if the provider could not be set
 	 */
 	public static synchronized void setDefault() throws IllegalStateException {
+		LOG.debug("Setting myself as default SSLSocketFactory");
 		if (!setSecurityProperty("ssl.SocketFactory.provider", BcTlsSocketFactory.class.getCanonicalName())) {
 			throw new IllegalStateException("Unable to set security property for socket factory");
 		}
@@ -102,9 +109,10 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		});
 	}
 
-	/**
-	 * Default constructor
-	 */
+	public BcTlsSocketFactory() {
+		reset();
+	}
+
 	public BcTlsSocketFactory(SSLParameters defaults) {
 		setDefaultCipherSuites(defaults.getCipherSuites());
 
@@ -126,6 +134,7 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 
 	@Override
 	public void setConfigProperty(final String key, final Object value) {
+		LOG.trace(String.format("Setting config: %s - %s", key, value));
 		this.config.put(key, value);
 	}
 
@@ -280,7 +289,6 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	 */
 	private BcTlsSocket createSocket(Socket rawSocket, final InetSocketAddress remoteAddress,
 			final InetSocketAddress localAddress, boolean autoClose, TlsAuthentication auth) throws IOException {
-
 		TlsAuthentication authentication = auth == null ? this.defaultAuth : auth;
 
 		if (rawSocket == null) {
@@ -288,11 +296,15 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		}
 
 		if (!rawSocket.isBound()) {
-			rawSocket.bind(null);
+			rawSocket.bind(localAddress);
 		}
 
 		if (!rawSocket.isConnected()) {
 			rawSocket.connect(remoteAddress, this.defaultTimeout.intValue());
+		}
+
+		if (LOG.isLevelEnabled(LogLevel.DEBUG)) {
+			LOG.debug(String.format("Handing out socket: %s", rawSocket.toString()));
 		}
 
 		SecureRandom random;
@@ -309,7 +321,6 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		tlsSocket.setSupportedCipherSuites(getSupportedCipherSuites());
 
 		return tlsSocket;
-
 	}
 
 	private SecureRandom getRandom() throws NoSuchAlgorithmException {
@@ -343,8 +354,12 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		Socket s = null;
 		URI uri = URI.create(String.format("socket://" + remoteAddress.getHostName() + ":%d", remoteAddress.getPort()));
 		ProxySelector ps = ProxySelector.getDefault();
-		Iterator<Proxy> proxies = ps.select(uri).iterator();
+		List<Proxy> proxyList = ps.select(uri);
+		if (LOG.isLevelEnabled(LogLevel.TRACE)) {
+			LOG.trace(String.format("Selector handed out %d proxies", proxyList.size()));
+		}
 
+		Iterator<Proxy> proxies = proxyList.iterator();
 		while (proxies.hasNext()) {
 			Proxy proxy = proxies.next();
 			try {
@@ -360,11 +375,14 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 				if (proxy.equals(Proxy.NO_PROXY)) {
 					throw ioe;
 				}
+
 				ps.connectFailed(uri, proxy.address(), ioe);
 
 				if (!proxies.hasNext()) {
 					throw new IOException("Unable to connect to through proxy" + uri, ioe);
 				}
+
+				LOG.error("Exception connecting to address", ioe);
 			}
 		}
 		return s;

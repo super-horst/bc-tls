@@ -87,4 +87,14 @@ public interface LogConsumer {
 	 *            Any number and type of objects
 	 */
 	void fatal(String message, Object... params);
+
+	/**
+	 * Check if a certain log level is enabled.
+	 * 
+	 * @param level
+	 *            the level to check
+	 * 
+	 * @return whether it's enabled or not
+	 */
+	boolean isLevelEnabled(LogLevel level);
 }

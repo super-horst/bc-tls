@@ -64,6 +64,11 @@ class TaggedConsumer implements LogConsumer {
 		this.parentConsumer.fatal(tag(message), params);
 	}
 
+	@Override
+	public boolean isLevelEnabled(LogLevel level) {
+		return this.parentConsumer.isLevelEnabled(level);
+	}
+
 	private String tag(String raw) {
 		return "[" + this.logTag + "] " + raw;
 	}

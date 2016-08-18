@@ -20,40 +20,13 @@
 package bc.tls.logging;
 
 /**
- * Does exactely nothing!
+ * Enum for level check.
  * 
  * @author super-horst
  *
  */
-class NoOpLogConsumer implements LogConsumer {
+public enum LogLevel {
 
-	@Override
-	public void trace(String message, Object... params) {
-	}
-
-	@Override
-	public void debug(String message, Object... params) {
-	}
-
-	@Override
-	public void info(String message, Object... params) {
-	}
-
-	@Override
-	public void warn(String message, Object... params) {
-	}
-
-	@Override
-	public void error(String message, Object... params) {
-	}
-
-	@Override
-	public void fatal(String message, Object... params) {
-	}
-
-	@Override
-	public boolean isLevelEnabled(LogLevel level) {
-		return false;
-	}
+	TRACE, DEBUG, INFO, WARN, ERROR, FATAL;
 
 }

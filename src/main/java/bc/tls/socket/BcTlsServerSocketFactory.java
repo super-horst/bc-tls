@@ -29,6 +29,9 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocketFactory;
 
 import bc.tls.CipherSuite;
+import bc.tls.logging.LogConsumer;
+import bc.tls.logging.LogConsumerFactory;
+import bc.tls.logging.LogLevel;
 
 /**
  * BC tls server socket factory
@@ -37,6 +40,8 @@ import bc.tls.CipherSuite;
  *
  */
 public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements SocketFactoryManager {
+
+	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("ServerSocketFactory");
 
 	/**
 	 * Thread safe map to hold configuration TODO why thread safe?
@@ -132,6 +137,10 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	}
 
 	private BcTlsServerSocket createSocket(Integer port, Integer backlog, InetAddress ifAddress) throws IOException {
+		if (LOG.isLevelEnabled(LogLevel.DEBUG)) {
+			LOG.debug(String.format("Handing out server socket '%s' on port %d", ifAddress, port));
+		}
+
 		return new BcTlsServerSocket(0, this.defaults);
 
 		// TODO implement! :)

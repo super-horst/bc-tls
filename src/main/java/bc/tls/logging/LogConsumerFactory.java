@@ -31,7 +31,7 @@ public class LogConsumerFactory {
 	/**
 	 * Key for {@code System.setProperty(...)}
 	 */
-	static final String PROPERTY_KEY = "bc.tls.logging.consumer";
+	public static final String PROPERTY_KEY = "bc.tls.logging.consumer";
 
 	private static volatile LogConsumer INSTANCE = null;
 
@@ -66,7 +66,7 @@ public class LogConsumerFactory {
 		INSTANCE = logger;
 	}
 
-	public static LogConsumer getTaggedConsumer(String tag) {
+	public synchronized static LogConsumer getTaggedConsumer(String tag) {
 		LogConsumer consumer = getDefaultConsumer();
 
 		if (consumer instanceof NoOpLogConsumer) {

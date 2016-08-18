@@ -19,6 +19,7 @@
  */
 package bc.tls.logging;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,31 +27,24 @@ public class Log4JConsumer implements LogConsumer {
 
 	private static final Logger LOG = LogManager.getLogger();
 
-	public Log4JConsumer() {
-	}
-
 	@Override
 	public void trace(String message, Object... params) {
 		LOG.trace(message, params);
-		
 	}
 
 	@Override
 	public void debug(String message, Object... params) {
 		LOG.debug(message, params);
-		
 	}
 
 	@Override
 	public void info(String message, Object... params) {
 		LOG.info(message, params);
-		
 	}
 
 	@Override
 	public void warn(String message, Object... params) {
 		LOG.warn(message, params);
-		
 	}
 
 	@Override
@@ -61,7 +55,11 @@ public class Log4JConsumer implements LogConsumer {
 	@Override
 	public void fatal(String message, Object... params) {
 		LOG.fatal(message, params);
-		
+	}
+
+	@Override
+	public boolean isLevelEnabled(LogLevel level) {
+		return LOG.isEnabled(Level.valueOf(level.name()));
 	}
 
 }

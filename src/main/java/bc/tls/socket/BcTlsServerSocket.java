@@ -29,7 +29,13 @@ import javax.net.ssl.SSLServerSocket;
 
 import org.bouncycastle.crypto.tls.TlsAuthentication;
 
+import bc.tls.logging.LogConsumer;
+import bc.tls.logging.LogConsumerFactory;
+import bc.tls.logging.LogLevel;
+
 public class BcTlsServerSocket extends SSLServerSocket {
+
+	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("ServerSocket");
 
 	private ClientAuthMode clientAuthMode;
 	private String[] supportedCipherSuites = new String[0];
@@ -38,37 +44,29 @@ public class BcTlsServerSocket extends SSLServerSocket {
 	private String[] enabledProtocols = new String[0];
 	private boolean enableSessionCreation;
 
-	private final BcTlsSocketFactory socketFactory;
-
 	public BcTlsServerSocket(int port, SSLParameters params) throws IOException {
 		super(port);
 		setEnabledCipherSuites(params.getCipherSuites());
-		this.socketFactory = constructSocketFactory();
 	}
 
 	public BcTlsServerSocket(int port, int backlog, SSLParameters params) throws IOException {
 		super(port, backlog);
-		this.socketFactory = constructSocketFactory();
+		setEnabledCipherSuites(params.getCipherSuites());
 	}
 
 	public BcTlsServerSocket(int port, int backlog, InetAddress address, SSLParameters params) throws IOException {
 		super(port, backlog, address);
-		this.socketFactory = constructSocketFactory();
-	}
-
-	private BcTlsSocketFactory constructSocketFactory() {
-		BcTlsSocketFactory fac = new BcTlsSocketFactory(new SSLParameters(getEnabledCipherSuites()));
-		fac.setDefaultCipherSuites(enabledCipherSuites);
-		fac.setSupportedCipherSuites(supportedCipherSuites);
-		fac.setClientFactory(false);
-		return fac;
+		setEnabledCipherSuites(params.getCipherSuites());
 	}
 
 	@Override
 	public Socket accept() throws IOException {
-		Socket s = super.accept();
+		Socket rawSocket = super.accept();
+		if (LOG.isLevelEnabled(LogLevel.DEBUG)) {
+			LOG.debug(String.format("Received connection: %s", rawSocket.toString()));
+		}
 
-		BcTlsSocket tlsSocket = new BcTlsSocket(s, true, new SecureRandom(), (TlsAuthentication) null);
+		BcTlsSocket tlsSocket = new BcTlsSocket(rawSocket, true, new SecureRandom(), (TlsAuthentication) null);
 		tlsSocket.setEnabledCipherSuites(enabledCipherSuites);
 		tlsSocket.startHandshake();
 		return tlsSocket;

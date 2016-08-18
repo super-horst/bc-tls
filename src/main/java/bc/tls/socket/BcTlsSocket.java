@@ -38,12 +38,17 @@ import org.bouncycastle.crypto.tls.TlsProtocol;
 import org.bouncycastle.crypto.tls.TlsServer;
 import org.bouncycastle.crypto.tls.TlsServerProtocol;
 
+import bc.tls.logging.LogConsumer;
+import bc.tls.logging.LogConsumerFactory;
+
 /**
  * BC Socket implementation
  * 
  * @author super-horst
  */
 public class BcTlsSocket extends AbstractBcTlsSocket {
+
+	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("Socket");
 
 	private boolean isConnected = false;
 
@@ -110,6 +115,7 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 			return;
 		}
 		if (this.protocol != null && !this.protocol.isClosed()) {
+			LOG.debug("Closing tls protocol");
 			this.protocol.close();
 		}
 		super.close();
@@ -193,20 +199,24 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 
 	@Override
 	public void startHandshake() throws IOException {
+		String hostname = socket.getInetAddress().getCanonicalHostName();
 		if (this.clientMode) {
+			LOG.debug("Performing handshake in client mode");
 			this.protocol = new TlsClientProtocol(this.socket.getInputStream(), this.socket.getOutputStream(),
 					this.secureRandom);
-			String hostname = socket.getInetAddress().getCanonicalHostName();
 			this.peer = new BcTlsClient(this.tlsAuth, this.enabledCipherSuites, hostname);
 			((TlsClientProtocol) this.protocol).connect((TlsClient) this.peer);
 		} else {
+			LOG.debug("Performing handshake in server mode");
 			this.protocol = new TlsServerProtocol(this.socket.getInputStream(), this.socket.getOutputStream(),
 					this.secureRandom);
-			String hostname = socket.getLocalAddress().getCanonicalHostName();
 			this.peer = new BcTlsServer(this.tlsCred, this.enabledCipherSuites, hostname);
 			((TlsServerProtocol) this.protocol).accept((TlsServer) this.peer);
 		}
 		isConnected = true;
+		
+		LOG.info(String.format("Handshake successful, connected to %s", hostname));
+		
 		session = new BcTlsSession(this, peer);
 	}
 
