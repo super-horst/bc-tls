@@ -49,7 +49,6 @@ public class BcTlsClient extends DefaultTlsClient {
 		this.hostname = host;
 		this.securityPrototype = prototype;
 		this.defaultCs = CipherSuite.convert(this.securityPrototype.getCipherSuites());
-		this.notifySelectedCipherSuite(selectedCipherSuite);
 	}
 
 	@Override
