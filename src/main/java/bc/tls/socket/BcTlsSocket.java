@@ -38,6 +38,7 @@ import org.bouncycastle.crypto.tls.TlsProtocol;
 import org.bouncycastle.crypto.tls.TlsServer;
 import org.bouncycastle.crypto.tls.TlsServerProtocol;
 
+import bc.tls.BcSecurityPrototype;
 import bc.tls.logging.LogConsumer;
 import bc.tls.logging.LogConsumerFactory;
 
@@ -70,8 +71,8 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 	private SSLSession session;
 
 	private final SecureRandom secureRandom;
-	private final TlsAuthentication tlsAuth;
-	private final TlsCredentials tlsCred;
+
+	private final BcSecurityPrototype securityPrototype;
 
 	/**
 	 * 
@@ -84,29 +85,10 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 	 * @param authentication
 	 *            tls authentication
 	 */
-	public BcTlsSocket(Socket s, boolean autoClose, SecureRandom random, TlsAuthentication authentication) {
+	public BcTlsSocket(Socket s, boolean autoClose, BcSecurityPrototype prototype) {
 		super(s, autoClose);
-		this.secureRandom = random;
-		this.tlsAuth = authentication;
-		this.tlsCred = null;
-	}
-
-	/**
-	 * 
-	 * @param s
-	 *            the underlying network socket
-	 * @param autoClose
-	 *            close the underlying socket automatically
-	 * @param random
-	 *            a {@link SecureRandom} implementation
-	 * @param credentials
-	 *            tls credentials
-	 */
-	public BcTlsSocket(Socket s, boolean autoClose, SecureRandom random, TlsCredentials credentials) {
-		super(s, autoClose);
-		this.secureRandom = random;
-		this.tlsAuth = null;
-		this.tlsCred = credentials;
+		this.secureRandom = prototype.makeRandom();
+		this.securityPrototype = prototype;
 	}
 
 	@Override
@@ -204,19 +186,19 @@ public class BcTlsSocket extends AbstractBcTlsSocket {
 			LOG.debug("Performing handshake in client mode");
 			this.protocol = new TlsClientProtocol(this.socket.getInputStream(), this.socket.getOutputStream(),
 					this.secureRandom);
-			this.peer = new BcTlsClient(this.tlsAuth, this.enabledCipherSuites, hostname);
+			this.peer = new BcTlsClient(this.securityPrototype, hostname);
 			((TlsClientProtocol) this.protocol).connect((TlsClient) this.peer);
 		} else {
 			LOG.debug("Performing handshake in server mode");
 			this.protocol = new TlsServerProtocol(this.socket.getInputStream(), this.socket.getOutputStream(),
 					this.secureRandom);
-			this.peer = new BcTlsServer(this.tlsCred, this.enabledCipherSuites, hostname);
+			this.peer = new BcTlsServer(this.securityPrototype, hostname);
 			((TlsServerProtocol) this.protocol).accept((TlsServer) this.peer);
 		}
 		isConnected = true;
-		
+
 		LOG.info(String.format("Handshake successful, connected to %s", hostname));
-		
+
 		session = new BcTlsSession(this, peer);
 	}
 

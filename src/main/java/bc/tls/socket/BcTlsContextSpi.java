@@ -31,6 +31,7 @@ import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
+import bc.tls.BcSecurityPrototype;
 import bc.tls.logging.LogConsumer;
 import bc.tls.logging.LogConsumerFactory;
 
@@ -51,6 +52,7 @@ public class BcTlsContextSpi extends SSLContextSpi {
 	private KeyManager[] keyManager;
 	private TrustManager[] trustManager;
 	private SecureRandom random;
+	BcSecurityPrototype securityPrototype;
 
 	@Override
 	protected void engineInit(KeyManager[] km, TrustManager[] tm, SecureRandom sr) throws KeyManagementException {
@@ -67,12 +69,12 @@ public class BcTlsContextSpi extends SSLContextSpi {
 
 	@Override
 	protected SSLSocketFactory engineGetSocketFactory() {
-		return new BcTlsSocketFactory(params);
+		return new BcTlsSocketFactory(this.securityPrototype);
 	}
 
 	@Override
 	protected SSLServerSocketFactory engineGetServerSocketFactory() {
-		return new BcTlsServerSocketFactory(params);
+		return new BcTlsServerSocketFactory(this.securityPrototype);
 	}
 
 	@Override

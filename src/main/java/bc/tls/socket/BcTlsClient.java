@@ -24,7 +24,10 @@ import org.bouncycastle.crypto.tls.DefaultTlsClient;
 import org.bouncycastle.crypto.tls.ProtocolVersion;
 import org.bouncycastle.crypto.tls.TlsAuthentication;
 
+import bc.tls.BcSecurityPrototype;
 import bc.tls.CipherSuite;
+import bc.tls.logging.LogConsumer;
+import bc.tls.logging.LogConsumerFactory;
 
 /**
  * BC-tls client
@@ -34,17 +37,19 @@ import bc.tls.CipherSuite;
  */
 public class BcTlsClient extends DefaultTlsClient {
 
-	/**
-	 * Authentication instance to retrieve server certificate.
-	 */
+	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("Client");
+
 	private final int[] defaultCs;
-	private final TlsAuthentication authentication;
+	private final BcSecurityPrototype securityPrototype;
 	private final String hostname;
 
-	public BcTlsClient(TlsAuthentication authentication, String[] defaultCipherSuites, String hostname) {
-		this.defaultCs = CipherSuite.convert(defaultCipherSuites);
-		this.hostname = hostname;
-		this.authentication = authentication;
+	private TlsAuthentication authentication = null;
+
+	public BcTlsClient(BcSecurityPrototype prototype, String host) {
+		this.hostname = host;
+		this.securityPrototype = prototype;
+		this.defaultCs = CipherSuite.convert(this.securityPrototype.getCipherSuites());
+		this.notifySelectedCipherSuite(selectedCipherSuite);
 	}
 
 	@Override
@@ -52,13 +57,32 @@ public class BcTlsClient extends DefaultTlsClient {
 		return defaultCs;
 	}
 
+	@Override
+	public void notifySelectedCipherSuite(int selectedCipherSuite) {
+		try {
+			this.securityPrototype.initialise(selectedCipherSuite);
+			this.authentication = this.securityPrototype.makeAuthentication();
+
+		} catch (IOException e) {
+			LOG.error("There is no authentication available for this cipher suite", e);
+		}
+
+		this.selectedCipherSuite = selectedCipherSuite;
+	}
+
+	/**
+	 * Get the cipher suite selected with the server hello message
+	 * 
+	 * @return the selected cipher suite
+	 */
 	public int getSelectedCipherSuite() {
 		return this.selectedCipherSuite;
+
 	}
 
 	@Override
 	public TlsAuthentication getAuthentication() throws IOException {
-		return authentication;
+		return this.authentication;
 	}
 
 	@Override

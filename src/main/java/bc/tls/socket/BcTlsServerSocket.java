@@ -29,6 +29,7 @@ import javax.net.ssl.SSLServerSocket;
 
 import org.bouncycastle.crypto.tls.TlsAuthentication;
 
+import bc.tls.BcSecurityPrototype;
 import bc.tls.logging.LogConsumer;
 import bc.tls.logging.LogConsumerFactory;
 import bc.tls.logging.LogLevel;
@@ -37,6 +38,8 @@ public class BcTlsServerSocket extends SSLServerSocket {
 
 	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("ServerSocket");
 
+	private final BcSecurityPrototype securityPrototype;
+
 	private ClientAuthMode clientAuthMode;
 	private String[] supportedCipherSuites = new String[0];
 	private String[] enabledCipherSuites = new String[0];
@@ -44,19 +47,20 @@ public class BcTlsServerSocket extends SSLServerSocket {
 	private String[] enabledProtocols = new String[0];
 	private boolean enableSessionCreation;
 
-	public BcTlsServerSocket(int port, SSLParameters params) throws IOException {
+	public BcTlsServerSocket(int port, BcSecurityPrototype prototype) throws IOException {
 		super(port);
-		setEnabledCipherSuites(params.getCipherSuites());
+		this.securityPrototype = prototype;
 	}
 
-	public BcTlsServerSocket(int port, int backlog, SSLParameters params) throws IOException {
+	public BcTlsServerSocket(int port, int backlog, BcSecurityPrototype prototype) throws IOException {
 		super(port, backlog);
-		setEnabledCipherSuites(params.getCipherSuites());
+		this.securityPrototype = prototype;
 	}
 
-	public BcTlsServerSocket(int port, int backlog, InetAddress address, SSLParameters params) throws IOException {
+	public BcTlsServerSocket(int port, int backlog, InetAddress address, BcSecurityPrototype prototype)
+			throws IOException {
 		super(port, backlog, address);
-		setEnabledCipherSuites(params.getCipherSuites());
+		this.securityPrototype = prototype;
 	}
 
 	@Override
@@ -66,7 +70,8 @@ public class BcTlsServerSocket extends SSLServerSocket {
 			LOG.debug(String.format("Received connection: %s", rawSocket.toString()));
 		}
 
-		BcTlsSocket tlsSocket = new BcTlsSocket(rawSocket, true, new SecureRandom(), (TlsAuthentication) null);
+		// TODO hand out prototype clones
+		BcTlsSocket tlsSocket = new BcTlsSocket(rawSocket, true, this.securityPrototype);
 		tlsSocket.setEnabledCipherSuites(enabledCipherSuites);
 		tlsSocket.startHandshake();
 		return tlsSocket;

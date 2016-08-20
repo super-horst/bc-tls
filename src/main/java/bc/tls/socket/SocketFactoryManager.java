@@ -21,6 +21,8 @@ package bc.tls.socket;
 
 import java.util.concurrent.TimeUnit;
 
+import bc.tls.BcSecurityPrototype;
+
 /**
  * Manager interface with some methods to configure socket factories.
  * 
@@ -45,12 +47,16 @@ public interface SocketFactoryManager {
 	 * Config property key for an optional random provider
 	 * <p>
 	 * Accepts: {@link String} and {@link Provider}
+	 * 
+	 * @deprecated
 	 */
 	public static final String KEY_RANDOM_PROVIDER = "bc.tls.random.provider";
 	/**
 	 * Config property key for an optional random algorithm
 	 * <p>
 	 * Accepts: {@link String}
+	 * 
+	 * @deprecated
 	 */
 	public static final String KEY_RANDOM_ALGORITHM = "bc.tls.random.algorithm";
 
@@ -95,6 +101,7 @@ public interface SocketFactoryManager {
 	 * @param suites
 	 *            cipher suites to set
 	 */
+	@Deprecated
 	void setDefaultCipherSuites(String[] suites);
 
 	/**
@@ -103,5 +110,19 @@ public interface SocketFactoryManager {
 	 * @param suites
 	 *            cipher suites to set
 	 */
+	@Deprecated
 	void setSupportedCipherSuites(String[] suites);
+
+	/**
+	 * @return this factory's default security prototype
+	 */
+	BcSecurityPrototype getDefaultSecurityPrototype();
+
+	/**
+	 * Update this factory's default security prototype
+	 * 
+	 * @param prototype
+	 *            this factory's new default security prototype
+	 */
+	public void setDefaultSecurityPrototype(BcSecurityPrototype prototype);
 }

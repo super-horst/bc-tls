@@ -39,10 +39,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.bouncycastle.crypto.tls.TlsAuthentication;
+import bc.tls.BcSecurityPrototype;
 import bc.tls.CipherSuite;
 import bc.tls.logging.LogConsumer;
 import bc.tls.logging.LogConsumerFactory;
@@ -63,13 +62,15 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	 */
 	private volatile Map<String, Object> config = new ConcurrentHashMap<String, Object>();
 
+	@Deprecated
 	private String[] defaultCipherSuites;
 
+	@Deprecated
 	private String[] supportedCipherSuites;
 
 	private boolean clientMode = true;
 
-	private TlsAuthentication defaultAuth;
+	private BcSecurityPrototype defaultPrototype;
 
 	/**
 	 * The default socket timeout in milliseconds
@@ -113,8 +114,8 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		reset();
 	}
 
-	public BcTlsSocketFactory(SSLParameters defaults) {
-		setDefaultCipherSuites(defaults.getCipherSuites());
+	public BcTlsSocketFactory(BcSecurityPrototype prototype) {
+		setDefaultSecurityPrototype(prototype);
 
 		reset();
 	}
@@ -126,7 +127,6 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		// TODO is this a reasonable selection?
 		setSupportedCipherSuites(CipherSuite.DEFAULT);
 
-		setDefaultAuthentication(new BcTlsAuthentication());
 		setDefaultTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS);
 
 		setConfigProperty(KEY_SOCKET_AUTO_CLOSE, Boolean.TRUE);
@@ -143,19 +143,14 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		return this.config.get(key);
 	}
 
-	/**
-	 * @return this factory's default authentication
-	 */
-	public TlsAuthentication getDefaultAuthentication() {
-		return this.defaultAuth;
+	@Override
+	public BcSecurityPrototype getDefaultSecurityPrototype() {
+		return this.defaultPrototype;
 	}
 
-	/**
-	 * @param defaultAuth
-	 *            this factory's new default authentication
-	 */
-	public void setDefaultAuthentication(TlsAuthentication defaultAuth) {
-		this.defaultAuth = defaultAuth;
+	@Override
+	public void setDefaultSecurityPrototype(BcSecurityPrototype prototype) {
+		this.defaultPrototype = prototype;
 	}
 
 	@Override
@@ -174,6 +169,7 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	 * @param suites
 	 *            cipher suites to set
 	 */
+	@Deprecated
 	@Override
 	public void setDefaultCipherSuites(String[] suites) {
 		this.defaultCipherSuites = suites.clone();
@@ -184,6 +180,7 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		return this.defaultCipherSuites;
 	}
 
+	@Deprecated
 	@Override
 	public void setSupportedCipherSuites(String[] suites) {
 		this.supportedCipherSuites = suites.clone();
@@ -239,36 +236,37 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 		return createSocket(s, new InetSocketAddress(host, port), null, autoClose, null);
 	}
 
-	public BcTlsSocket createSocket(InetAddress host, int port, TlsAuthentication auth) throws IOException {
-		return createSocket(null, new InetSocketAddress(host, port), null, auth);
+	public BcTlsSocket createSocket(InetAddress host, int port, BcSecurityPrototype prototype) throws IOException {
+		return createSocket(null, new InetSocketAddress(host, port), null, prototype);
 	}
 
 	public BcTlsSocket createSocket(InetAddress host, int port, InetAddress localAddress, int localPort,
-			TlsAuthentication auth) throws IOException {
+			BcSecurityPrototype prototype) throws IOException {
 		return createSocket(null, new InetSocketAddress(host, port), new InetSocketAddress(localAddress, localPort),
-				auth);
+				prototype);
 	}
 
-	public BcTlsSocket createSocket(String host, int port, InetAddress localHost, int localPort, TlsAuthentication auth)
-			throws IOException, UnknownHostException {
-		return createSocket(null, new InetSocketAddress(host, port), new InetSocketAddress(localHost, localPort), auth);
+	public BcTlsSocket createSocket(String host, int port, InetAddress localHost, int localPort,
+			BcSecurityPrototype prototype) throws IOException, UnknownHostException {
+		return createSocket(null, new InetSocketAddress(host, port), new InetSocketAddress(localHost, localPort),
+				prototype);
 	}
 
-	public BcTlsSocket createSocket(String host, int port, TlsAuthentication auth)
+	public BcTlsSocket createSocket(String host, int port, BcSecurityPrototype prototype)
 			throws IOException, UnknownHostException {
-		return createSocket(null, new InetSocketAddress(host, port), null, auth);
+		return createSocket(null, new InetSocketAddress(host, port), null, prototype);
 	}
 
 	private BcTlsSocket createSocket(final Socket socket, final InetSocketAddress remoteAddress,
-			final InetSocketAddress localAddress, TlsAuthentication auth) throws IOException {
+			final InetSocketAddress localAddress, BcSecurityPrototype prototype) throws IOException {
 
 		return createSocket(socket, remoteAddress, localAddress, (Boolean) getConfigProperty(KEY_SOCKET_AUTO_CLOSE),
-				auth);
+				prototype);
 	}
 
-	public BcTlsSocket createSocket(Socket s, String host, int port, boolean autoClose, TlsAuthentication auth)
+	public BcTlsSocket createSocket(Socket s, String host, int port, boolean autoClose, BcSecurityPrototype prototype)
 			throws IOException {
-		return createSocket(s, new InetSocketAddress(host, port), null, autoClose, auth);
+		return createSocket(s, new InetSocketAddress(host, port), null, autoClose, prototype);
 	}
 
 	/**
@@ -282,14 +280,15 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 	 *            local address to bind to
 	 * @param autoClose
 	 *            auto close underlying socket, if tls socket closes
-	 * @param auth
-	 *            authentication override, defaults to {@code defaultAuth}
+	 * @param prototype
+	 *            security override, defaults to {@code this.defaultPrototype}
 	 * @return
 	 * @throws IOException
 	 */
 	private BcTlsSocket createSocket(Socket rawSocket, final InetSocketAddress remoteAddress,
-			final InetSocketAddress localAddress, boolean autoClose, TlsAuthentication auth) throws IOException {
-		TlsAuthentication authentication = auth == null ? this.defaultAuth : auth;
+			final InetSocketAddress localAddress, boolean autoClose, BcSecurityPrototype prototype) throws IOException {
+		// TODO hand out prototype clones
+		BcSecurityPrototype securityPrototype = prototype == null ? this.defaultPrototype : prototype;
 
 		if (rawSocket == null) {
 			rawSocket = createRawSocket(remoteAddress, localAddress);
@@ -307,18 +306,8 @@ public class BcTlsSocketFactory extends SSLSocketFactory implements SocketFactor
 			LOG.debug(String.format("Handing out socket: %s", rawSocket.toString()));
 		}
 
-		SecureRandom random;
-		try {
-			random = getRandom();
-		} catch (NoSuchAlgorithmException e) {
-			throw new IOException("Unable to select source of randomness", e);
-		}
-
-		BcTlsSocket tlsSocket = new BcTlsSocket(rawSocket, autoClose, random, authentication);
-
+		BcTlsSocket tlsSocket = new BcTlsSocket(rawSocket, autoClose, securityPrototype);
 		tlsSocket.setUseClientMode(this.clientMode);
-		tlsSocket.setEnabledCipherSuites(getDefaultCipherSuites());
-		tlsSocket.setSupportedCipherSuites(getSupportedCipherSuites());
 
 		return tlsSocket;
 	}

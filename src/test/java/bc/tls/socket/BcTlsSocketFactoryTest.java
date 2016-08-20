@@ -18,6 +18,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import bc.tls.CipherSuite;
+import bc.tls.DefaultSecurityPrototype;
 import bc.tls.logging.Log4JConsumer;
 import bc.tls.logging.LogConsumerFactory;
 
@@ -81,7 +82,7 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void defaultCipherSuitsTest() {
-		BcTlsSocketFactory sockFac = new BcTlsSocketFactory(this.params);
+		BcTlsSocketFactory sockFac = new BcTlsSocketFactory(new DefaultSecurityPrototype(null, null, null, null));
 		String[] cipherSuites = new String[] { "TLS_ECDHE_ECDSA_WITH_AES_256_SHA" };
 
 		sockFac.setDefaultCipherSuites(cipherSuites);
@@ -92,7 +93,7 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void supportedCipherSuitsTest() {
-		BcTlsSocketFactory sockFac = new BcTlsSocketFactory(this.params);
+		BcTlsSocketFactory sockFac = new BcTlsSocketFactory(new DefaultSecurityPrototype(null, null, null, null));
 		String[] cipherSuites = new String[] { "TLS_ECDHE_ECDSA_WITH_AES_256_SHA" };
 
 		sockFac.setSupportedCipherSuites(cipherSuites);
@@ -103,7 +104,7 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void simpleSocketCreationTest() throws UnknownHostException, IOException {
-		SocketFactory sockFac = new BcTlsSocketFactory(this.params);
+		SocketFactory sockFac = new BcTlsSocketFactory(new DefaultSecurityPrototype(null, null, null, null));
 
 		try (Socket socket = sockFac.createSocket("localhost", TEST_PORT)) {
 			Assert.assertTrue(socket instanceof BcTlsSocket);
@@ -113,7 +114,7 @@ public class BcTlsSocketFactoryTest {
 
 	@Test
 	public void locallyBoundSocketCreationTest() throws UnknownHostException, IOException {
-		SocketFactory sockFac = new BcTlsSocketFactory(this.params);
+		SocketFactory sockFac = new BcTlsSocketFactory(new DefaultSecurityPrototype(null, null, null, null));
 		InetAddress addr = InetAddress.getByName("127.0.0.1");
 
 		try (Socket socket = sockFac.createSocket("localhost", TEST_PORT, addr, 0)) {

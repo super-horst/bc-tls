@@ -21,35 +21,35 @@ package bc.tls.socket;
 
 import java.io.IOException;
 
-import org.bouncycastle.crypto.tls.AlertDescription;
 import org.bouncycastle.crypto.tls.CertificateRequest;
 import org.bouncycastle.crypto.tls.DefaultTlsServer;
 import org.bouncycastle.crypto.tls.ProtocolVersion;
 import org.bouncycastle.crypto.tls.TlsCredentials;
-import org.bouncycastle.crypto.tls.TlsEncryptionCredentials;
-import org.bouncycastle.crypto.tls.TlsFatalAlert;
 import org.bouncycastle.crypto.tls.TlsSignerCredentials;
-
+import bc.tls.BcSecurityPrototype;
 import bc.tls.CipherSuite;
+import bc.tls.logging.LogConsumer;
+import bc.tls.logging.LogConsumerFactory;
 
 public class BcTlsServer extends DefaultTlsServer {
 
-	/**
-	 * Authentication instance to retrieve server certificate.
-	 */
+	private static final LogConsumer LOG = LogConsumerFactory.getTaggedConsumer("Server");
+
 	private final int[] defaultCs;
-	private final TlsCredentials credentials;
+	private final BcSecurityPrototype securityPrototype;
 	private final String hostname;
 
-	public BcTlsServer(TlsCredentials credentials, String[] defaultCipherSuites, String host) {
-		this.credentials = credentials;
-		this.defaultCs = CipherSuite.convert(defaultCipherSuites);
+	private TlsSignerCredentials signerCredentials;
+
+	public BcTlsServer(BcSecurityPrototype prototype, String host) {
 		this.hostname = host;
+		this.securityPrototype = prototype;
+		this.defaultCs = CipherSuite.convert(this.securityPrototype.getCipherSuites());
 	}
 
 	@Override
 	public int[] getCipherSuites() {
-		return defaultCs;
+		return this.defaultCs;
 	}
 
 	@Override
@@ -59,36 +59,27 @@ public class BcTlsServer extends DefaultTlsServer {
 
 	@Override
 	public CertificateRequest getCertificateRequest() throws IOException {
-		return null;
-
+		return this.securityPrototype.makeCertificateRequest();
 	}
 
 	@Override
 	public int getSelectedCipherSuite() throws IOException {
 		if (this.selectedCipherSuite == 0) {
-			return super.getSelectedCipherSuite();
+			super.getSelectedCipherSuite();
 		}
+
+		this.securityPrototype.initialise(this.selectedCipherSuite);
+		this.signerCredentials = this.securityPrototype.makeSignerCredentials();
+		if (this.signerCredentials == null) {
+			LOG.warn("There are no credentials available for this cipher suite");
+		}
+
 		return this.selectedCipherSuite;
 	}
 
 	@Override
-	protected TlsSignerCredentials getDSASignerCredentials() throws IOException {
-		throw new TlsFatalAlert(AlertDescription.internal_error);
-	}
+	public TlsCredentials getCredentials() throws IOException {
+		return signerCredentials;
 
-	@Override
-	protected TlsSignerCredentials getECDSASignerCredentials() throws IOException {
-		throw new TlsFatalAlert(AlertDescription.internal_error);
 	}
-
-	@Override
-	protected TlsEncryptionCredentials getRSAEncryptionCredentials() throws IOException {
-		throw new TlsFatalAlert(AlertDescription.internal_error);
-	}
-
-	@Override
-	protected TlsSignerCredentials getRSASignerCredentials() throws IOException {
-		throw new TlsFatalAlert(AlertDescription.internal_error);
-	}
-
 }

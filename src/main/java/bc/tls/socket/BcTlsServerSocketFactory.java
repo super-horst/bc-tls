@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocketFactory;
 
+import bc.tls.BcSecurityPrototype;
 import bc.tls.CipherSuite;
 import bc.tls.logging.LogConsumer;
 import bc.tls.logging.LogConsumerFactory;
@@ -48,17 +49,25 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	 */
 	private volatile Map<String, Object> config = new ConcurrentHashMap<String, Object>();
 	private Long defaultTimeout;
+
+	@Deprecated
 	private String[] defaultCipherSuites;
+
+	@Deprecated
 	private String[] supportedCipherSuites;
 
-	private SSLParameters defaults;
+	private BcSecurityPrototype defaultPrototype;
 
 	/**
 	 * Default constructor
 	 */
-	public BcTlsServerSocketFactory(SSLParameters defaults) {
-		this.defaults = defaults;
-		setDefaultCipherSuites(defaults.getCipherSuites());
+	public BcTlsServerSocketFactory() {
+
+		reset();
+	}
+
+	public BcTlsServerSocketFactory(BcSecurityPrototype prototype) {
+		this.defaultPrototype = prototype;
 
 		reset();
 	}
@@ -96,6 +105,18 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	}
 
 	@Override
+	public BcSecurityPrototype getDefaultSecurityPrototype() {
+		return this.defaultPrototype;
+	}
+
+	@Override
+	public void setDefaultSecurityPrototype(BcSecurityPrototype prototype) {
+		this.defaultPrototype = prototype;
+
+	}
+
+	@Deprecated
+	@Override
 	public void setDefaultCipherSuites(String[] suites) {
 		this.defaultCipherSuites = suites.clone();
 	}
@@ -111,6 +132,7 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 	 * @param suites
 	 *            cipher suites to set
 	 */
+	@Deprecated
 	@Override
 	public void setSupportedCipherSuites(String[] suites) {
 		this.supportedCipherSuites = suites.clone();
@@ -141,7 +163,7 @@ public class BcTlsServerSocketFactory extends SSLServerSocketFactory implements 
 			LOG.debug(String.format("Handing out server socket '%s' on port %d", ifAddress, port));
 		}
 
-		return new BcTlsServerSocket(0, this.defaults);
+		return new BcTlsServerSocket(0, this.defaultPrototype);
 
 		// TODO implement! :)
 
